@@ -108,3 +108,11 @@ export {
   handleSetFirefoxPrefs,
   handleGetFirefoxPrefs,
 } from './firefox-prefs.js';
+
+// WebExtension tools (install and uninstall extensions)
+export {
+  installExtensionTool,
+  uninstallExtensionTool,
+  handleInstallExtension,
+  handleUninstallExtension,
+} from './webextension.js';
