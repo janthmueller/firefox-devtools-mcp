@@ -220,6 +220,7 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   // WebExtensions
   ['install_extension', tools.handleInstallExtension],
   ['uninstall_extension', tools.handleUninstallExtension],
+  ['list_extensions', tools.handleListExtensions],
 ]);
 
 // All tool definitions
@@ -282,6 +283,7 @@ const allTools = [
   // WebExtensions
   tools.installExtensionTool,
   tools.uninstallExtensionTool,
+  tools.listExtensionsTool,
 ];
 
 async function main() {
