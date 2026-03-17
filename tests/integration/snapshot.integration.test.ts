@@ -17,7 +17,7 @@ describe('Snapshot Integration Tests', () => {
 
   beforeAll(async () => {
     firefox = await createTestFirefox();
-  }, 30000); // 30 second timeout for browser startup
+  }, 60000); // 60 second timeout for browser startup (CI runners can be slow)
 
   afterAll(async () => {
     await closeFirefox(firefox);
