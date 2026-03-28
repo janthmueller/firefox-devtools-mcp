@@ -491,5 +491,3 @@ When contributing to the Firefox client:
 3. **Copy working patterns** - Use test scripts as templates
 4. **Test incrementally** - Small, focused tests reveal issues quickly
 5. **Document lessons** - Update this doc with new learnings
-
-See `tasks/README.md` for development workflow and CR process.
