@@ -112,7 +112,9 @@ export const cliOptions = {
   },
   marionetteHost: {
     type: 'string',
-    description: 'Marionette host to connect to when using --connect-existing (default: 127.0.0.1). Also used as the BiDi WebSocket connect address when different from 127.0.0.1.',
+    description:
+      'Marionette host to connect to when using --connect-existing (default: 127.0.0.1).' +
+      ' Also used as the BiDi WebSocket connect address when different from 127.0.0.1.',
     default: process.env.MARIONETTE_HOST ?? '127.0.0.1',
   },
   env: {
