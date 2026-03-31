@@ -162,6 +162,15 @@ npx @modelcontextprotocol/inspector node dist/index.js --headless --viewport 128
 npm run inspector:dev
 ```
 
+## Testing
+
+```bash
+npm run test:run          # all tests once (unit + integration)
+npm test                  # watch mode
+```
+
+See [docs/testing.md](docs/testing.md) for full details on running specific test suites, the e2e scenario coverage, and known issues.
+
 ## Troubleshooting
 
 - Firefox not found: pass `--firefox-path "/Applications/Firefox.app/Contents/MacOS/firefox"` (macOS) or the correct path on your OS.
@@ -180,7 +189,7 @@ npm run inspector:dev
     ```
 
     > **The Key Change:** On Windows, running a Node.js package via `npx` often requires the `cmd /c` prefix to be executed correctly from within another process like VSCode's extension host. Therefore, `"command": "npx"` was replaced with `"command": "cmd"`, and the actual `npx` command was moved into the `"args"` array, preceded by `"/c"`. This fix allows Windows to interpret the command correctly and launch the server.
-  
+
   - **Solution 2** Instead of another layer of shell you can write the absolute path to `npx`:
 
     ```json
