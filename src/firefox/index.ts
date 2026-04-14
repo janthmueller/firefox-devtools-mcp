@@ -2,7 +2,7 @@
  * Firefox Client - Public facade for modular Firefox automation
  */
 
-import type { FirefoxLaunchOptions, ConsoleMessage } from './types.js';
+import type { FirefoxLaunchOptions, ConsoleMessage, ExtractTextOptions } from './types.js';
 import { WebElement } from 'selenium-webdriver';
 import { FirefoxCore } from './core.js';
 import { logDebug } from '../utils/logger.js';
@@ -116,6 +116,13 @@ export class FirefoxClient {
       throw new Error('Not connected');
     }
     return await this.dom.getContent();
+  }
+
+  async extractText(options: ExtractTextOptions = {}): Promise<string> {
+    if (!this.dom) {
+      throw new Error('Not connected');
+    }
+    return await this.dom.extractText(options);
   }
 
   async clickBySelector(selector: string): Promise<void> {

@@ -3,6 +3,7 @@
  */
 
 import { By, Key, WebDriver, WebElement } from 'selenium-webdriver';
+import type { ExtractTextOptions, ExtractTextScope, ExtractTextSource } from './types.js';
 
 export class DomInteractions {
   constructor(
@@ -23,6 +24,71 @@ export class DomInteractions {
   async getContent(): Promise<string> {
     const html = await this.evaluate('return document.documentElement.outerHTML');
     return String(html);
+  }
+
+  async extractText(options: ExtractTextOptions = {}): Promise<string> {
+    const scope: ExtractTextScope = options.scope ?? 'page';
+    const source: ExtractTextSource = options.source ?? 'rendered';
+
+    let targetElement: WebElement | null = null;
+
+    if (scope === 'selector') {
+      const selector = options.selector?.trim();
+      if (!selector) {
+        throw new Error('selector parameter is required when scope="selector"');
+      }
+
+      try {
+        targetElement = await this.driver.executeScript(
+          `
+          const selector = arguments[0];
+          return document.querySelector(selector);
+        `,
+          selector
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Invalid selector syntax: ${message}`);
+      }
+
+      if (!targetElement) {
+        throw new Error(`Element not found for selector: ${selector}`);
+      }
+    }
+
+    if (scope === 'uid') {
+      const uid = options.uid?.trim();
+      if (!uid) {
+        throw new Error('uid parameter is required when scope="uid"');
+      }
+      if (!this.resolveUid) {
+        throw new Error('extractText: resolveUid callback not set. Ensure snapshot is initialized.');
+      }
+      targetElement = await this.resolveUid(uid);
+    }
+
+    const extractedText = await this.driver.executeScript<string>(
+      `
+      const target = arguments[0];
+      const source = arguments[1];
+      const node = target ?? document.body ?? document.documentElement;
+
+      if (!node) {
+        return '';
+      }
+
+      const text =
+        source === 'dom'
+          ? (node.textContent ?? '')
+          : (node instanceof HTMLElement ? node.innerText : node.textContent) ?? '';
+
+      return text.replace(/\\r\\n?/g, '\\n');
+    `,
+      targetElement,
+      source
+    );
+
+    return extractedText;
   }
 
   // ============================================================================

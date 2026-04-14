@@ -19,6 +19,9 @@ export {
 // Script evaluation tools
 export { evaluateScriptTool, handleEvaluateScript } from './script.js';
 
+// Text extraction tools
+export { extractTextTool, handleExtractText } from './text-extraction.js';
+
 // Console tools
 export {
   listConsoleMessagesTool,
