@@ -114,7 +114,7 @@ export class FirefoxCore {
       if (this.options.logFile) {
         this.logFilePath = this.options.logFile;
       } else if (this.options.env && Object.keys(this.options.env).length > 0) {
-        const outputDir = join(homedir(), '.firefox-devtools-mcp', 'output');
+        const outputDir = join(homedir(), '.firewatch-mcp', 'output');
         mkdirSync(outputDir, { recursive: true });
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         this.logFilePath = join(outputDir, `firefox-${timestamp}.log`);

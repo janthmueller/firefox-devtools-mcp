@@ -1,11 +1,11 @@
 {
-  "name": "firefox-devtools",
+  "name": "firewatch",
   "description": "Firefox browser automation via WebDriver BiDi. Automate Firefox for testing, scraping, form filling, screenshots, and debugging.",
   "version": "0.6.0",
   "author": {
-    "name": "Mozilla",
-    "url": "https://github.com/mozilla/firefox-devtools-mcp"
+    "name": "Jan Th Mueller",
+    "url": "https://github.com/janthmueller/firefox-devtools-mcp"
   },
-  "repository": "https://github.com/mozilla/firefox-devtools-mcp",
+  "repository": "https://github.com/janthmueller/firefox-devtools-mcp",
   "license": "MIT"
 }

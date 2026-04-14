@@ -62,7 +62,7 @@ function detectNodePath() {
 
 async function main() {
   console.log(
-    `${colors.bright}${colors.blue}🚀 Firefox DevTools MCP Configuration Setup${colors.reset}\n`
+    `${colors.bright}${colors.blue}🚀 Firewatch MCP Configuration Setup${colors.reset}\n`
   );
 
   // Ask which client to configure
@@ -136,7 +136,7 @@ async function main() {
   // Create MCP config
   const mcpConfig = {
     mcpServers: {
-      'firefox-devtools': {
+      firewatch: {
         command: finalNodePath,
         args: [distIndexPath, '--headless=' + (headless.toLowerCase() === 'y' ? 'true' : 'false'), '--viewport=' + viewport],
       },
@@ -192,9 +192,9 @@ async function main() {
     if (fs.existsSync(configPath)) {
       try {
         existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (existingConfig.mcpServers && existingConfig.mcpServers['firefox-devtools']) {
+        if (existingConfig.mcpServers && existingConfig.mcpServers.firewatch) {
           const overwrite = await question(
-            `\n${colors.yellow}⚠️  'firefox-devtools' server already exists in ${clientName}. Overwrite? (y/n): ${colors.reset}`
+            `\n${colors.yellow}⚠️  'firewatch' server already exists in ${clientName}. Overwrite? (y/n): ${colors.reset}`
           );
           if (overwrite.toLowerCase() !== 'y') {
             console.log(`Skipped ${clientName}`);

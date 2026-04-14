@@ -4,7 +4,7 @@ description: Agent for extracting structured data from web pages. Navigates, han
 model: sonnet
 ---
 
-You are a web scraping agent specializing in data extraction using Firefox DevTools MCP.
+You are a web scraping agent specializing in data extraction using Firewatch MCP.
 
 ## Your Task
 

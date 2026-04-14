@@ -3,7 +3,7 @@
  * Windows Integration Tests Runner
  *
  * Runs integration tests directly via node to avoid vitest fork issues on Windows.
- * See: https://github.com/mozilla/firefox-devtools-mcp/issues/33
+ * See: https://github.com/janthmueller/firefox-devtools-mcp/issues/33
  */
 
 import { FirefoxDevTools } from '../dist/index.js';

@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  firefox-devtools-mcp:
+  firewatch-mcp:
     build:
       context: .
       dockerfile: Dockerfile
-    image: firefox-devtools-mcp:latest
-    container_name: firefox-devtools-mcp
+    image: firewatch-mcp:latest
+    container_name: firewatch-mcp
     stdin_open: true
     tty: true
     environment:

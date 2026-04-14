@@ -92,7 +92,7 @@ export const cliOptions = {
   firefoxArg: {
     type: 'array',
     description:
-      'Additional arguments for Firefox. Only applies when Firefox is launched by firefox-devtools-mcp.',
+      'Additional arguments for Firefox. Only applies when Firefox is launched by firewatch-mcp.',
   },
   startUrl: {
     type: 'string',
@@ -118,7 +118,7 @@ export const cliOptions = {
   outputFile: {
     type: 'string',
     description:
-      'Path to file where Firefox output (stdout/stderr) will be written. If not specified, output is written to ~/.firefox-devtools-mcp/output/',
+      'Path to file where Firefox output (stdout/stderr) will be written. If not specified, output is written to ~/.firewatch-mcp/output/',
   },
   pref: {
     type: 'array',
@@ -143,7 +143,7 @@ export const cliOptions = {
 
 export function parseArguments(version: string, argv = process.argv) {
   const yargsInstance = yargs(hideBin(argv))
-    .scriptName('npx firefox-devtools-mcp@latest')
+    .scriptName('npx firewatch-mcp@latest')
     .options(cliOptions)
     .example([
       [

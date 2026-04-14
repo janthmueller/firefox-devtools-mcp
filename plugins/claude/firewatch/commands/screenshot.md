@@ -3,23 +3,23 @@ description: Take a screenshot of the current page or element
 argument-hint: [uid]
 ---
 
-# /firefox:screenshot
+# /firewatch:screenshot
 
 Captures a screenshot of the page or a specific element.
 
 ## Usage
 
 ```
-/firefox:screenshot          # Full page
-/firefox:screenshot <uid>    # Specific element
+/firewatch:screenshot          # Full page
+/firewatch:screenshot <uid>    # Specific element
 ```
 
 ## Examples
 
 ```
-/firefox:screenshot
-/firefox:screenshot e15
-/firefox:screenshot e42
+/firewatch:screenshot
+/firewatch:screenshot e15
+/firewatch:screenshot e42
 ```
 
 ## What Happens

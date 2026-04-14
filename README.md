@@ -1,17 +1,17 @@
-# Firefox DevTools MCP
+# Firewatch MCP
 
-[![npm version](https://badge.fury.io/js/firefox-devtools-mcp.svg)](https://www.npmjs.com/package/firefox-devtools-mcp)
-[![CI](https://github.com/mozilla/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/mozilla/firefox-devtools-mcp/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/mozilla/firefox-devtools-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/mozilla/firefox-devtools-mcp)
+[![npm version](https://badge.fury.io/js/firewatch-mcp.svg)](https://www.npmjs.com/package/firewatch-mcp)
+[![CI](https://github.com/janthmueller/firefox-devtools-mcp/workflows/CI/badge.svg)](https://github.com/janthmueller/firefox-devtools-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/janthmueller/firefox-devtools-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/janthmueller/firefox-devtools-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<a href="https://glama.ai/mcp/servers/@mozilla/firefox-devtools-mcp"><img src="https://glama.ai/mcp/servers/@mozilla/firefox-devtools-mcp/badge" height="223" alt="Glama"></a>
+<a href="https://glama.ai/mcp/servers/firewatch-mcp"><img src="https://glama.ai/mcp/servers/firewatch-mcp/badge" height="223" alt="Glama"></a>
 
-Model Context Protocol server for automating Firefox via WebDriver BiDi (through Selenium WebDriver). Works with Claude Code, Claude Desktop, Cursor, Cline and other MCP clients.
+Model Context Protocol server for automating Firefox via WebDriver BiDi (through Selenium WebDriver). Firewatch MCP works with Claude Code, Claude Desktop, Cursor, Cline and other MCP clients.
 
-Repository: https://github.com/mozilla/firefox-devtools-mcp
+Repository: https://github.com/janthmueller/firefox-devtools-mcp
 
-> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firefox-devtools-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
+> **Note**: This MCP server requires a local Firefox browser installation and cannot run on cloud hosting services like glama.ai. Use `npx firewatch-mcp@latest` to run locally, or use Docker with the provided Dockerfile.
 
 ## Requirements
 
@@ -25,17 +25,17 @@ Recommended: use npx so you always run the latest published version from npm.
 Option A — Claude Code CLI
 
 ```bash
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest
+claude mcp add firewatch npx firewatch-mcp@latest
 ```
 
 Pass options either as args or env vars. Examples:
 
 ```bash
 # Headless + viewport via args
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest -- --headless --viewport 1280x720
+claude mcp add firewatch npx firewatch-mcp@latest -- --headless --viewport 1280x720
 
 # Or via environment variables
-claude mcp add firefox-devtools npx firefox-devtools-mcp@latest \
+claude mcp add firewatch npx firewatch-mcp@latest \
   --env START_URL=https://example.com \
   --env FIREFOX_HEADLESS=true
 ```
@@ -51,9 +51,9 @@ Add to your Claude Code config file:
 ```json
 {
   "mcpServers": {
-    "firefox-devtools": {
+    "firewatch": {
       "command": "npx",
-      "args": ["-y", "firefox-devtools-mcp@latest", "--headless", "--viewport", "1280x720"],
+      "args": ["-y", "firewatch-mcp@latest", "--headless", "--viewport", "1280x720"],
       "env": {
         "START_URL": "about:home"
       }
@@ -72,7 +72,7 @@ npm run setup
 ## Try it with MCP Inspector
 
 ```bash
-npx @modelcontextprotocol/inspector npx firefox-devtools-mcp@latest --start-url https://example.com --headless
+npx @modelcontextprotocol/inspector npx firewatch-mcp@latest --start-url https://example.com --headless
 ```
 
 Then call tools like:
@@ -111,7 +111,7 @@ Use `--connect-existing` to automate your real browsing session — with cookies
 firefox --marionette
 
 # Run the MCP server
-npx firefox-devtools-mcp --connect-existing --marionette-port 2828
+npx firewatch-mcp --connect-existing --marionette-port 2828
 ```
 
 Or set `marionette.enabled` to `true` in `about:config` (or `user.js`) to enable Marionette on every launch.
@@ -187,14 +187,14 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
 - Firefox not found: pass `--firefox-path "/Applications/Firefox.app/Contents/MacOS/firefox"` (macOS) or the correct path on your OS.
 - First run is slow: Selenium sets up the BiDi session; subsequent runs are faster.
 - Stale UIDs after navigation: take a fresh snapshot (`take_snapshot`) before using UID tools.
-- Windows 10: Error during discovery for MCP server 'firefox-devtools': MCP error -32000: Connection closed
+- Windows 10: Error during discovery for MCP server 'firewatch': MCP error -32000: Connection closed
   - **Solution 1** Call using `cmd` (For more info https://github.com/modelcontextprotocol/servers/issues/1082#issuecomment-2791786310)
 
     ```json
     "mcpServers": {
-      "firefox-devtools": {
+      "firewatch": {
         "command": "cmd",
-        "args": ["/c", "npx", "-y", "firefox-devtools-mcp@latest"]
+        "args": ["/c", "npx", "-y", "firewatch-mcp@latest"]
       }
     }
     ```
@@ -205,9 +205,9 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
 
     ```json
     "mcpServers": {
-      "firefox-devtools": {
+      "firewatch": {
         "command": "C:\\nvm4w\\nodejs\\npx.ps1",
-        "args": ["-y", "firefox-devtools-mcp@latest"]
+        "args": ["-y", "firewatch-mcp@latest"]
       }
     }
     ```
@@ -227,10 +227,10 @@ See [docs/testing.md](docs/testing.md) for full details on running specific test
 Issues are tracked on [Bugzilla](https://bugzilla.mozilla.org) under **product: Developer Infrastructure**, **component: AI for Development**.
 
 - [File a new issue](https://bugzilla.mozilla.org/enter_bug.cgi?format=__default__&blocked=2026717&product=Developer%20Infrastructure&component=AI%20for%20Development)
-- [Meta bug (tracks all firefox-devtools-mcp issues)](https://bugzilla.mozilla.org/show_bug.cgi?id=2026717)
+- [Meta bug (tracks upstream firefox-devtools-mcp issues)](https://bugzilla.mozilla.org/show_bug.cgi?id=2026717)
 
-For questions and discussion, join the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
+For questions and discussion about the upstream project, join the [#firefox-devtools-mcp Matrix room](https://chat.mozilla.org/#/room/#firefox-devtools-mcp:mozilla.org).
 
 ## Author
 
-Maintained by [Mozilla](https://www.mozilla.org).
+Maintained by Jan Th Mueller as an independent fork of Mozilla's Firefox DevTools MCP.

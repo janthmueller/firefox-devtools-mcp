@@ -1,4 +1,4 @@
-# Firefox DevTools Plugin for Claude Code
+# Firewatch Plugin for Claude Code
 
 Firefox browser automation via WebDriver BiDi. Navigate pages, fill forms, click elements, take screenshots, and monitor console/network activity.
 
@@ -9,42 +9,42 @@ This plugin provides:
 - **MCP Server** - Connects Claude Code to Firefox automation
 - **Skills** - Auto-triggers for browser automation, testing, and scraping tasks
 - **Agents** - Dedicated `e2e-tester` and `web-scraper` agents for focused tasks
-- **Commands** - `/firefox:navigate`, `/firefox:screenshot`, `/firefox:debug`
+- **Commands** - `/firewatch:navigate`, `/firewatch:screenshot`, `/firewatch:debug`
 
 ## Installation
 
 ```bash
-claude plugin install firefox-devtools
+claude plugin install firewatch
 ```
 
 ## Commands
 
-### /firefox:navigate
+### /firewatch:navigate
 
 Navigate to a URL and take a DOM snapshot:
 
 ```
-/firefox:navigate https://example.com
-/firefox:navigate https://github.com/login
+/firewatch:navigate https://example.com
+/firewatch:navigate https://github.com/login
 ```
 
-### /firefox:screenshot
+### /firewatch:screenshot
 
 Capture the current page or a specific element:
 
 ```
-/firefox:screenshot
-/firefox:screenshot e15
+/firewatch:screenshot
+/firewatch:screenshot e15
 ```
 
-### /firefox:debug
+### /firewatch:debug
 
 Show console errors and failed network requests:
 
 ```
-/firefox:debug
-/firefox:debug console
-/firefox:debug network
+/firewatch:debug
+/firewatch:debug console
+/firewatch:debug network
 ```
 
 ## Agents
@@ -78,5 +78,5 @@ The plugin works automatically when you ask about browser tasks:
 
 ## Links
 
-- [Repository](https://github.com/mozilla/firefox-devtools-mcp)
-- [npm](https://www.npmjs.com/package/firefox-devtools-mcp)
+- [Repository](https://github.com/janthmueller/firefox-devtools-mcp)
+- [npm](https://www.npmjs.com/package/firewatch-mcp)

@@ -1,5 +1,5 @@
 /**
- * Smoke tests for firefox-devtools-mcp
+ * Smoke tests for firewatch-mcp
  *
  * These tests verify basic functionality without requiring a Firefox instance.
  * More comprehensive integration tests should be added as the project matures.
@@ -11,12 +11,12 @@ import { SERVER_NAME, SERVER_VERSION } from '../src/config/constants.js';
 describe('Smoke Tests', () => {
   describe('Constants', () => {
     it('should have correct server name', () => {
-      expect(SERVER_NAME).toBe('firefox-devtools');
+      expect(SERVER_NAME).toBe('firewatch');
     });
 
     it('should have valid server version', () => {
       expect(SERVER_VERSION).toMatch(/^\d+\.\d+\.\d+/);
-      expect(SERVER_VERSION).toBe('0.7.1');
+      expect(SERVER_VERSION).toBe('0.9.1');
     });
   });
 

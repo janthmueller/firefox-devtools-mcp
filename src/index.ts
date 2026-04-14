@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Firefox DevTools MCP Server
+ * Firewatch MCP Server
  * Model Context Protocol server for Firefox browser automation via WebDriver BiDi
  */
 
@@ -105,7 +105,7 @@ export async function getFirefox(): Promise<FirefoxDevTools> {
   }
 
   // No existing instance - create new connection
-  log('Initializing Firefox DevTools connection...');
+  log('Initializing Firewatch connection...');
 
   let options: FirefoxLaunchOptions;
 
@@ -367,7 +367,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  log('Firefox DevTools MCP server running on stdio');
+  log('Firewatch MCP server running on stdio');
   log('Ready to accept tool requests');
 
   // Clean up the Marionette session so Firefox accepts new connections.

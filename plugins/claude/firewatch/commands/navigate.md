@@ -3,22 +3,22 @@ description: Navigate Firefox to a URL and take a snapshot
 argument-hint: <url>
 ---
 
-# /firefox:navigate
+# /firewatch:navigate
 
 Opens a URL in Firefox and takes a DOM snapshot for interaction.
 
 ## Usage
 
 ```
-/firefox:navigate <url>
+/firewatch:navigate <url>
 ```
 
 ## Examples
 
 ```
-/firefox:navigate https://example.com
-/firefox:navigate https://github.com/login
-/firefox:navigate file:///path/to/local.html
+/firewatch:navigate https://example.com
+/firewatch:navigate https://github.com/login
+/firewatch:navigate file:///path/to/local.html
 ```
 
 ## What Happens

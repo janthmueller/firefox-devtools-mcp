@@ -1,14 +1,14 @@
 {
-  "name": "firefox-devtools-mcp",
+  "name": "firewatch-mcp",
   "version": "0.9.1",
-  "description": "Model Context Protocol (MCP) server for Firefox DevTools automation",
-  "author": "Mozilla",
+  "description": "Model Context Protocol (MCP) server for Firefox browser automation",
+  "author": "Jan Th Mueller",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "firefox-devtools-mcp": "./dist/index.js"
+    "firewatch-mcp": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -43,7 +43,7 @@
     "mcp-server",
     "model-context-protocol",
     "firefox",
-    "firefox-devtools",
+    "firewatch",
     "browser-automation",
     "webdriver-bidi",
     "selenium",
@@ -95,12 +95,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mozilla/firefox-devtools-mcp.git"
+    "url": "git+https://github.com/janthmueller/firefox-devtools-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/mozilla/firefox-devtools-mcp/issues"
+    "url": "https://github.com/janthmueller/firefox-devtools-mcp/issues"
   },
-  "homepage": "https://github.com/mozilla/firefox-devtools-mcp#readme",
+  "homepage": "https://github.com/janthmueller/firefox-devtools-mcp#readme",
   "publishConfig": {
     "access": "public"
   }

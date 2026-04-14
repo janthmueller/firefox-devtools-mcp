@@ -1,5 +1,5 @@
 /**
- * Network monitoring tools for Firefox DevTools MCP
+ * Network monitoring tools for Firewatch MCP
  * Provides network request inspection capabilities
  */
 

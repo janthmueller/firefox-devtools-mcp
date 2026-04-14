@@ -173,7 +173,7 @@ When Firefox runs in WebDriver BiDi mode (automated testing), it applies [Recomm
 At startup via CLI:
 ```bash
 # Enable ML/AI features like Smart Window
-npx firefox-devtools-mcp --pref "browser.ml.enable=true"
+npx firewatch-mcp --pref "browser.ml.enable=true"
 ```
 
 At runtime via tools (requires `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`):
@@ -349,7 +349,7 @@ firefox.clearNetworkRequests();
 npm run build
 
 # Test BiDi implementation
-DEBUG=firefox-devtools npm run test:tools
+DEBUG=firewatch npm run test:tools
 
 # Test script with comprehensive checks
 node scripts/test-bidi-devtools.js
@@ -357,10 +357,10 @@ node scripts/test-bidi-devtools.js
 
 ### Debug Logging
 
-Set `DEBUG=firefox-devtools` environment variable for verbose logging:
+Set `DEBUG=firewatch` environment variable for verbose logging:
 
 ```bash
-DEBUG=firefox-devtools node scripts/test-bidi-devtools.js
+DEBUG=firewatch node scripts/test-bidi-devtools.js
 ```
 
 Logs include:

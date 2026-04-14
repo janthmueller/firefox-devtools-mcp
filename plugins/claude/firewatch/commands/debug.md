@@ -3,24 +3,24 @@ description: Show console errors and failed network requests
 argument-hint: [console|network|all]
 ---
 
-# /firefox:debug
+# /firewatch:debug
 
 Displays debugging information from the current page.
 
 ## Usage
 
 ```
-/firefox:debug              # Show all (console errors + failed requests)
-/firefox:debug console      # Console messages only
-/firefox:debug network      # Network requests only
+/firewatch:debug              # Show all (console errors + failed requests)
+/firewatch:debug console      # Console messages only
+/firewatch:debug network      # Network requests only
 ```
 
 ## Examples
 
 ```
-/firefox:debug
-/firefox:debug console
-/firefox:debug network
+/firewatch:debug
+/firewatch:debug console
+/firewatch:debug network
 ```
 
 ## What Happens
