@@ -47,6 +47,17 @@ export interface NetworkRecord {
   };
 }
 
+export type ExtractTextScope = 'page' | 'selector' | 'uid';
+
+export type ExtractTextSource = 'rendered' | 'dom';
+
+export interface ExtractTextOptions {
+  scope?: ExtractTextScope;
+  selector?: string;
+  uid?: string;
+  source?: ExtractTextSource;
+}
+
 /**
  * Firefox launch options
  */

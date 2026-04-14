@@ -65,6 +65,18 @@ describe('Tools Index', () => {
     });
   });
 
+  describe('Text Extraction Tools', () => {
+    it('should export extractTextTool', () => {
+      expect(tools.extractTextTool).toBeDefined();
+      expect(tools.extractTextTool.name).toBe('extract_text');
+    });
+
+    it('should export text extraction handler', () => {
+      expect(tools.handleExtractText).toBeDefined();
+      expect(typeof tools.handleExtractText).toBe('function');
+    });
+  });
+
   describe('Network Tools', () => {
     it('should export listNetworkRequestsTool', () => {
       expect(tools.listNetworkRequestsTool).toBeDefined();

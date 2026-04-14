@@ -187,6 +187,9 @@ const toolHandlers = new Map<string, (input: unknown) => Promise<McpToolResponse
   ['resolve_uid_to_selector', tools.handleResolveUidToSelector],
   ['clear_snapshot', tools.handleClearSnapshot],
 
+  // Text extraction
+  ['extract_text', tools.handleExtractText],
+
   // Input
   ['click_by_uid', tools.handleClickByUid],
   ['hover_by_uid', tools.handleHoverByUid],
@@ -251,6 +254,9 @@ const allTools = [
   tools.takeSnapshotTool,
   tools.resolveUidToSelectorTool,
   tools.clearSnapshotTool,
+
+  // Text extraction
+  tools.extractTextTool,
 
   // Input
   tools.clickByUidTool,

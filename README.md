@@ -78,6 +78,7 @@ npx @modelcontextprotocol/inspector npx firefox-devtools-mcp@latest --start-url 
 Then call tools like:
 
 - `list_pages`, `select_page`, `navigate_page`
+- `extract_text` for rendered or DOM text from the page or a scoped region
 - `take_snapshot` then `click_by_uid` / `fill_by_uid`
 - `list_network_requests` (always‑on capture), `get_network_request`
 - `screenshot_page`, `list_console_messages`
@@ -126,6 +127,7 @@ BiDi-dependent features (console events, network events) are not available in co
 ## Tool overview
 
 - Pages: list/new/navigate/select/close
+- Text Extraction: extract rendered or DOM text from the page, selector, or UID
 - Snapshot/UID: take/resolve/clear
 - Input: click/hover/fill/drag/upload/form fill
 - Network: list/get (ID‑first, filters, always‑on capture)
@@ -150,6 +152,15 @@ screenshot_by_uid({ uid: "abc123", saveTo: "/tmp/element.png" })
 The file can then be viewed with Claude Code's `Read` tool without impacting context size.
 
 ## Local development
+
+If you use Nix, enter a dev shell with the required local tools:
+
+```bash
+nix-shell
+npm ci
+```
+
+The shell provides Node.js, npm, Firefox, and geckodriver.
 
 ```bash
 npm install
