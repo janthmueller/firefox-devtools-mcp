@@ -4,24 +4,23 @@ This project ships with ready-to-use GitHub Actions for CI, release, and npm pub
 
 Workflows
 - CI (.github/workflows/ci.yml)
-  - Triggers on push (main, develop) and PRs.
+  - Triggers on push to `main` and `develop`.
   - Matrix: Node 20 and 22.
   - Steps: install → lint → format check → typecheck → test → build.
   - Optional: uploads coverage to Codecov if `coverage/lcov.info` exists and `CODECOV_TOKEN` is set.
   - Uploads the `dist/` artifact (Node 20 job) for quick download.
 
 - PR Check (.github/workflows/pr-check.yml)
-  - Fast checks on PR open/update: lint, format check, typecheck.
+  - Fast checks on PR open/update: lint, format check, typecheck, unit tests, build.
 
 - Release (.github/workflows/release.yml)
   - On tag push `v*`: runs tests, builds `dist/`, creates a GitHub Release with a tarball of `dist` + metadata.
 
 - Publish (.github/workflows/publish.yml)
-  - On GitHub Release published or on tag push `v*.*.*` (and via manual dispatch): builds and publishes to npm with provenance.
-  - Requires `NPM_TOKEN` repository secret.
+  - On tag push `v*.*.*` (and via manual dispatch): builds and publishes to npm with provenance.
+  - Uses npm trusted publishing via GitHub Actions OIDC; no `NPM_TOKEN` is required.
 
 Secrets
-- `NPM_TOKEN`: npm access token with publish rights to the package name (`firewatch-mcp`).
 - `CODECOV_TOKEN` (optional): used by Codecov upload step (CI). The step is skipped if the token or coverage file is missing.
 
 Release flow
@@ -31,6 +30,7 @@ Release flow
 2) Create and push the tag (must match package.json):
    - `git tag v0.2.0 && git push origin v0.2.0`
 3) `release` creates a GitHub Release; `publish` publishes to npm.
+4) For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
 
 Windows Integration Tests
 - On Windows, vitest has known issues with process forking when running integration tests that spawn Firefox.
@@ -42,4 +42,5 @@ Windows Integration Tests
 Notes
 - If you want Codecov upload to run, switch CI test step to `npm run test:coverage` or generate `coverage/lcov.info`.
 - Provenance is enabled for npm publish (Node 20+).
+- Trusted publishing requires GitHub-hosted runners plus npm trusted publisher configuration on the package settings page.
 - Use `@latest` in README examples to encourage npx usage.
