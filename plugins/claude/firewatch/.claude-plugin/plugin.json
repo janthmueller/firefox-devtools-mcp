@@ -4,8 +4,8 @@
   "version": "0.6.0",
   "author": {
     "name": "Jan Th Mueller",
-    "url": "https://github.com/janthmueller/firefox-devtools-mcp"
+    "url": "https://github.com/janthmueller/firewatch-mcp"
   },
-  "repository": "https://github.com/janthmueller/firefox-devtools-mcp",
+  "repository": "https://github.com/janthmueller/firewatch-mcp",
   "license": "MIT"
 }

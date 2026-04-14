@@ -3,7 +3,9 @@
 This project ships with ready-to-use GitHub Actions for CI, release, and npm publishing.
 
 Workflows
+
 - CI (.github/workflows/ci.yml)
+
   - Triggers on push to `main` and `develop`.
   - Matrix: Node 20 and 22.
   - Steps: install → lint → format check → typecheck → test → build.
@@ -11,9 +13,11 @@ Workflows
   - Uploads the `dist/` artifact (Node 20 job) for quick download.
 
 - PR Check (.github/workflows/pr-check.yml)
+
   - Fast checks on PR open/update: lint, format check, typecheck, unit tests, build.
 
 - Release (.github/workflows/release.yml)
+
   - On tag push `v*`: runs tests, builds `dist/`, creates a GitHub Release with a tarball of `dist` + metadata.
 
 - Publish (.github/workflows/publish.yml)
@@ -21,25 +25,29 @@ Workflows
   - Uses npm trusted publishing via GitHub Actions OIDC; no `NPM_TOKEN` is required.
 
 Secrets
+
 - `CODECOV_TOKEN` (optional): used by Codecov upload step (CI). The step is skipped if the token or coverage file is missing.
 
 Release flow
-1) Bump version in `package.json` (keep 0.x until API is stable):
+
+1. Bump version in `package.json` (keep 0.x until API is stable):
    - `npm version patch` (or minor)
    - Commit the change
-2) Create and push the tag (must match package.json):
+2. Create and push the tag (must match package.json):
    - `git tag v0.2.0 && git push origin v0.2.0`
-3) `release` creates a GitHub Release; `publish` publishes to npm.
-4) For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
+3. `release` creates a GitHub Release; `publish` publishes to npm.
+4. For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
 
 Windows Integration Tests
+
 - On Windows, vitest has known issues with process forking when running integration tests that spawn Firefox.
-- See: https://github.com/janthmueller/firewatch-mcp/issues/33
+- See upstream: https://github.com/mozilla/firefox-devtools-mcp/issues/33
 - To work around this, we use a separate test runner (`scripts/run-integration-tests-windows.mjs`) that runs integration tests directly via Node.js without vitest's process isolation.
 - The CI workflow detects Windows and automatically uses this runner instead of vitest for integration tests.
 - Unit tests still run via vitest on all platforms.
 
 Notes
+
 - If you want Codecov upload to run, switch CI test step to `npm run test:coverage` or generate `coverage/lcov.info`.
 - Provenance is enabled for npm publish (Node 20+).
 - Trusted publishing requires GitHub-hosted runners plus npm trusted publisher configuration on the package settings page.
