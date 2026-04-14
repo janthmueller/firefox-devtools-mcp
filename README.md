@@ -13,6 +13,8 @@ Repository: https://github.com/janthmueller/firewatch-mcp
 
 > **Independent fork:** Firewatch MCP is an independent fork of Mozilla's Firefox DevTools MCP. It is not an official Mozilla product and is published separately under the `firewatch-mcp` package name.
 
+> **Stability note:** Firewatch MCP is still unstable on `1.x`. APIs, tools, config keys, and behavior can still change, and breaking changes may still happen when upgrading.
+
 Firewatch MCP builds on the upstream project with a few practical additions:
 
 - `extract_text` for rendered or DOM text extraction from the full page or a scoped region

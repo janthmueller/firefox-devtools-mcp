@@ -18,7 +18,7 @@ Workflows
 
 - Release (.github/workflows/publish.yml)
   - On push to `main` (and via manual dispatch): runs checks, then executes `semantic-release`.
-  - `semantic-release` analyzes conventional commits, creates the next version tag, publishes `firewatch-mcp` to npm with provenance, and creates a GitHub Release with the npm tarball attached.
+  - `semantic-release` analyzes conventional commits, updates `CHANGELOG.md`, creates the next version tag, publishes `firewatch-mcp` to npm with provenance, and creates a GitHub Release with the npm tarball attached.
 
 Secrets
 
@@ -32,7 +32,7 @@ Release flow
    - `fix:` -> patch
    - `feat:` -> minor
    - `!` or `BREAKING CHANGE:` -> major
-4. If a release is needed, `semantic-release` creates the git tag and GitHub Release, then publishes `firewatch-mcp` to npm via trusted publishing.
+4. If a release is needed, `semantic-release` updates `CHANGELOG.md`, creates the release commit and git tag, publishes `firewatch-mcp` to npm via trusted publishing, and creates the GitHub Release.
 5. For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
 
 Conventional commit examples
@@ -55,4 +55,5 @@ Notes
 - If you want Codecov upload to run, switch CI test step to `npm run test:coverage` or generate `coverage/lcov.info`.
 - Provenance is enabled for npm publish via trusted publishing on GitHub-hosted runners.
 - Conventional commit messages on `main` now drive versioning and release notes.
+- `CHANGELOG.md` is maintained automatically by semantic-release and committed back to `main` during releases.
 - Use `@latest` in README examples to encourage npx usage.
