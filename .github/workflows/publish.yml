@@ -21,7 +21,6 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -44,6 +43,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify packaged artifact startup
+        run: npm run test:package-artifact
 
       - name: Install Firefox
         uses: browser-actions/setup-firefox@latest

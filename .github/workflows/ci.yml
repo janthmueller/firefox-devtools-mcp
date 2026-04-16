@@ -41,6 +41,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify packaged artifact startup
+        run: npm run test:package-artifact
+
       - name: Install Firefox
         uses: browser-actions/setup-firefox@latest
         with:

@@ -8,16 +8,16 @@ Workflows
 
   - Triggers on push to `main` and `develop`.
   - Matrix: Node 20 and 22.
-  - Steps: install → lint → format check → typecheck → test → build.
+  - Steps: install → lint → format check → typecheck → build → packaged-artifact smoke test → Firefox test suite.
   - Optional: uploads coverage to Codecov if `coverage/lcov.info` exists and `CODECOV_TOKEN` is set.
   - Uploads the `dist/` artifact (Node 20 job) for quick download.
 
 - PR Check (.github/workflows/pr-check.yml)
 
-  - Fast checks on PR open/update: lint, format check, typecheck, unit tests, build.
+  - Fast checks on PR open/update: lint, format check, typecheck, unit tests, build, packaged-artifact smoke test.
 
 - Release (.github/workflows/publish.yml)
-  - On push to `main` (and via manual dispatch): runs checks, then executes `semantic-release`.
+  - On push to `main` (and via manual dispatch): runs checks, verifies the packaged CLI startup path, then executes `semantic-release`.
   - `semantic-release` analyzes conventional commits, updates `CHANGELOG.md`, creates the next version tag, publishes `firewatch-mcp` to npm with provenance, and creates a GitHub Release with the npm tarball attached.
 
 Secrets
@@ -34,6 +34,7 @@ Release flow
    - `!` or `BREAKING CHANGE:` -> major
 4. If a release is needed, `semantic-release` updates `CHANGELOG.md`, creates the release commit and git tag, publishes `firewatch-mcp` to npm via trusted publishing, and creates the GitHub Release.
 5. For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
+6. The workflow checkout must keep GitHub credentials available so the semantic-release git plugin can push the release commit back to `main`.
 
 Conventional commit examples
 
@@ -56,4 +57,5 @@ Notes
 - Provenance is enabled for npm publish via trusted publishing on GitHub-hosted runners.
 - Conventional commit messages on `main` now drive versioning and release notes.
 - `CHANGELOG.md` is maintained automatically by semantic-release and committed back to `main` during releases.
+- A packaged-artifact smoke test (`npm pack` + `node dist/index.js --version`) runs in PR, CI, and release workflows to catch bundle-only startup regressions before publish.
 - Use `@latest` in README examples to encourage npx usage.
