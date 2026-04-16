@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/janthmueller/firewatch-mcp/compare/v1.3.0...v1.3.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* clarify snapshot root reset behavior ([0acbf50](https://github.com/janthmueller/firewatch-mcp/commit/0acbf5088197830fbcd51ae7d5f7a05d8eee4d0a))
+
 # [1.3.0](https://github.com/janthmueller/firewatch-mcp/compare/v1.2.0...v1.3.0) (2026-04-16)
 
 

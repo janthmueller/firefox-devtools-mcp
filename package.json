@@ -1,6 +1,6 @@
 {
   "name": "firewatch-mcp",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Independent fork of Firefox DevTools MCP for Firefox browser automation",
   "author": "Jan Th Mueller",
   "license": "MIT",
