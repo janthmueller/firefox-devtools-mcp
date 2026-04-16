@@ -1,3 +1,18 @@
+# [1.1.0](https://github.com/janthmueller/firewatch-mcp/compare/v1.0.0...v1.1.0) (2026-04-16)
+
+
+### Bug Fixes
+
+* preserve existing changelog history ([15714dd](https://github.com/janthmueller/firewatch-mcp/commit/15714dd28cadd4c9c559a683019fe058f2603336))
+* restore packaged firewatch startup ([b6d70d5](https://github.com/janthmueller/firewatch-mcp/commit/b6d70d51572e3baf4dec87c27c3f408a03cbdc49))
+* restore packaged firewatch startup ([#15](https://github.com/janthmueller/firewatch-mcp/issues/15)) ([9560c4b](https://github.com/janthmueller/firewatch-mcp/commit/9560c4bdfa217075535ff43befadff5b56282258)), closes [#14](https://github.com/janthmueller/firewatch-mcp/issues/14)
+
+
+### Features
+
+* generate changelog during releases ([ec1a330](https://github.com/janthmueller/firewatch-mcp/commit/ec1a33050368e9dee98f4e0454128bd1b4831e07))
+* generate changelog during releases ([861ef6f](https://github.com/janthmueller/firewatch-mcp/commit/861ef6fdb241d699e30cc705d2d73b0e1770d9e5))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
