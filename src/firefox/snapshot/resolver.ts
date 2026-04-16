@@ -50,6 +50,42 @@ export class UidResolver {
     }
   }
 
+  mergeUidMappings(uidMap: UidEntry[]): void {
+    for (const entry of uidMap) {
+      this.uidToEntry.set(entry.uid, entry);
+    }
+  }
+
+  getUidMappings(): UidEntry[] {
+    return Array.from(this.uidToEntry.values());
+  }
+
+  getNextUidCounter(): number {
+    let maxCounter = -1;
+
+    for (const uid of this.uidToEntry.keys()) {
+      const separator = uid.indexOf('_');
+      const counterPart = separator === -1 ? uid : uid.slice(separator + 1);
+      const counter = parseInt(counterPart, 10);
+      if (!isNaN(counter) && counter > maxCounter) {
+        maxCounter = counter;
+      }
+    }
+
+    return maxCounter + 1;
+  }
+
+  getUidEntry(uid: string): UidEntry {
+    this.validateUid(uid);
+
+    const entry = this.uidToEntry.get(uid);
+    if (!entry) {
+      throw new Error(`UID not found: ${uid}. Take a fresh snapshot first.`);
+    }
+
+    return entry;
+  }
+
   /**
    * Clear all UID mappings and cache
    */
@@ -84,14 +120,7 @@ export class UidResolver {
    * Resolve UID to CSS selector (with staleness check)
    */
   resolveUidToSelector(uid: string): string {
-    this.validateUid(uid);
-
-    const entry = this.uidToEntry.get(uid);
-    if (!entry) {
-      throw new Error(`UID not found: ${uid}. Take a fresh snapshot first.`);
-    }
-
-    return entry.css;
+    return this.getUidEntry(uid).css;
   }
 
   /**
@@ -101,10 +130,7 @@ export class UidResolver {
   async resolveUidToElement(uid: string): Promise<WebElement> {
     this.validateUid(uid);
 
-    const entry = this.uidToEntry.get(uid);
-    if (!entry) {
-      throw new Error(`UID not found: ${uid}. Take a fresh snapshot first.`);
-    }
+    const entry = this.getUidEntry(uid);
 
     // Check cache
     const cached = this.elementCache.get(uid);

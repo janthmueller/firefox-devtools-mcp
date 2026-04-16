@@ -60,6 +60,12 @@ describe('Snapshot Tools', () => {
       expect(properties?.selector.type).toBe('string');
     });
 
+    it('takeSnapshotTool should have uid property with string type', () => {
+      const { properties } = takeSnapshotTool.inputSchema;
+      expect(properties?.uid).toBeDefined();
+      expect(properties?.uid.type).toBe('string');
+    });
+
     it('takeSnapshotTool should expose text truncation controls', () => {
       const { properties } = takeSnapshotTool.inputSchema;
       expect(properties?.collectorMaxTextLength).toBeDefined();

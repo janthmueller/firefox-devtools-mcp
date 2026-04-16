@@ -12,6 +12,9 @@ import type { TreeWalkerResult } from './treeWalker.js';
 export interface CreateSnapshotOptions extends TreeWalkerOptions {
   selector?: string;
   formatterMaxTextLength?: number | null;
+  uid?: string;
+  rootCss?: string;
+  rootXPath?: string | null;
 }
 
 /**
@@ -19,6 +22,7 @@ export interface CreateSnapshotOptions extends TreeWalkerOptions {
  */
 export interface CreateSnapshotResult extends TreeWalkerResult {
   selectorError?: string;
+  uidError?: string;
 }
 
 /**
@@ -33,7 +37,18 @@ export function createSnapshot(
     // Determine root element
     let rootElement: Element = document.body;
 
-    if (options?.selector) {
+    if (options?.rootXPath || options?.rootCss) {
+      const selected = resolveRootElement(options.rootXPath, options.rootCss);
+      if (!selected) {
+        return {
+          tree: null,
+          uidMap: [],
+          truncated: false,
+          uidError: `Root UID target not found. Take a fresh snapshot first.`,
+        };
+      }
+      rootElement = selected;
+    } else if (options?.selector) {
       try {
         const selected = document.querySelector(options.selector);
         if (!selected) {
@@ -65,6 +80,15 @@ export function createSnapshot(
     if (options?.collectorMaxTextLength !== undefined) {
       treeOptions.collectorMaxTextLength = options.collectorMaxTextLength;
     }
+    if (options?.existingUidMap !== undefined) {
+      treeOptions.existingUidMap = options.existingUidMap;
+    }
+    if (options?.nextUidCounter !== undefined) {
+      treeOptions.nextUidCounter = options.nextUidCounter;
+    }
+    if (options?.uid !== undefined) {
+      treeOptions.includeRoot = true;
+    }
     const result = walkTree(rootElement, snapshotId, treeOptions);
 
     if (!result.tree) {
@@ -84,4 +108,34 @@ export function createSnapshot(
 // Make it available globally for executeScript
 if (typeof window !== 'undefined') {
   (window as any).__createSnapshot = createSnapshot;
+}
+
+function resolveRootElement(rootXPath?: string | null, rootCss?: string): Element | null {
+  if (rootXPath) {
+    try {
+      const xpathResult = document.evaluate(
+        rootXPath,
+        document,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null
+      );
+      if (xpathResult.singleNodeValue instanceof Element) {
+        return xpathResult.singleNodeValue;
+      }
+    } catch {
+      // Fall back to CSS lookup below.
+    }
+  }
+
+  if (!rootCss) {
+    return null;
+  }
+
+  try {
+    const cssResult = document.querySelector(rootCss);
+    return cssResult instanceof Element ? cssResult : null;
+  } catch {
+    return null;
+  }
 }

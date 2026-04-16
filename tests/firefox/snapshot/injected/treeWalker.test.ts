@@ -68,6 +68,48 @@ describe('treeWalker', () => {
       const result = walkTree(document.body, 1);
       expect(result.truncated).toBe(false);
     });
+
+    it('reuses existing UIDs when selectors match', () => {
+      document.body.innerHTML = '<section id="root"><button id="submit">OK</button></section>';
+
+      const initial = walkTree(document.body, 1);
+      const existingEntries = initial.uidMap;
+
+      const subtreeRoot = document.querySelector('#root');
+      expect(subtreeRoot).not.toBeNull();
+
+      const rooted = walkTree(subtreeRoot!, 1, {
+        existingUidMap: existingEntries,
+        nextUidCounter: 99,
+      });
+
+      expect(rooted.tree?.uid).toBe(
+        existingEntries.find((entry) => entry.css.includes('#root'))?.uid
+      );
+      expect(rooted.uidMap.find((entry) => entry.css.includes('#submit'))?.uid).toBe(
+        existingEntries.find((entry) => entry.css.includes('#submit'))?.uid
+      );
+    });
+
+    it('assigns new UIDs after the existing counter for new nodes', () => {
+      document.body.innerHTML = '<section id="root"><button id="existing">Old</button></section>';
+
+      const initial = walkTree(document.body, 5);
+      const root = document.querySelector('#root');
+      expect(root).not.toBeNull();
+
+      const newButton = document.createElement('button');
+      newButton.id = 'new-button';
+      newButton.textContent = 'New';
+      root!.appendChild(newButton);
+
+      const rooted = walkTree(root!, 5, {
+        existingUidMap: initial.uidMap,
+        nextUidCounter: 3,
+      });
+
+      expect(rooted.uidMap.find((entry) => entry.css.includes('#new-button'))?.uid).toBe('5_3');
+    });
   });
 
   describe('bubble-up pattern', () => {

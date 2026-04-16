@@ -91,6 +91,7 @@ export interface InjectedScriptResult {
   error?: string;
   truncated?: boolean;
   selectorError?: string;
+  uidError?: string;
   debugLog?: Array<{ el: string; relevant: boolean; depth: number }>;
 }
 

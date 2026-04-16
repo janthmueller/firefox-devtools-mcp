@@ -40,6 +40,11 @@ export const takeSnapshotTool = {
         type: 'string',
         description: 'CSS selector to scope snapshot to specific element (e.g., "#app")',
       },
+      uid: {
+        type: 'string',
+        description:
+          'Optional UID to use as the subtree root. Omit for the document root. maxDepth becomes relative to this root.',
+      },
       collectorMaxTextLength: {
         anyOf: [{ type: 'number' }, { type: 'null' }],
         description:
@@ -88,6 +93,7 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       maxDepth,
       includeAll = false,
       selector,
+      uid,
       collectorMaxTextLength,
       formatterMaxTextLength,
     } = (args as {
@@ -97,12 +103,16 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       maxDepth?: number;
       includeAll?: boolean;
       selector?: string;
+      uid?: string;
       collectorMaxTextLength?: number | null;
       formatterMaxTextLength?: number | null;
     }) || {};
 
     validateTextLengthControl('collectorMaxTextLength', collectorMaxTextLength);
     validateTextLengthControl('formatterMaxTextLength', formatterMaxTextLength);
+    if (selector !== undefined && uid !== undefined) {
+      throw new Error('selector and uid cannot be used together');
+    }
 
     // Apply hard cap on maxLines to prevent token overflow
     const maxLines = Math.min(Math.max(1, requestedMaxLines), TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP);
@@ -118,6 +128,9 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
     }
     if (selector) {
       snapshotOptions.selector = selector;
+    }
+    if (uid) {
+      snapshotOptions.uid = uid;
     }
     if (collectorMaxTextLength !== undefined) {
       snapshotOptions.collectorMaxTextLength = collectorMaxTextLength;
@@ -153,6 +166,9 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
     let output = `📸 Snapshot (id=${snapshot.json.snapshotId})`;
     if (selector) {
       output += ` [selector: ${selector}]`;
+    }
+    if (uid) {
+      output += ` [uid root: ${uid}]`;
     }
     if (includeAll) {
       output += ' [includeAll: true]';
