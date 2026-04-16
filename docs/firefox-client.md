@@ -211,7 +211,7 @@ The server provides comprehensive browser automation tools:
 | Tool | Description | Implementation |
 |------|------------|----------------|
 | `take_screenshot` | Capture screenshot (PNG) | `driver.takeScreenshot()` |
-| `take_snapshot` | Get HTML content | `driver.executeScript('return document.documentElement.outerHTML')` |
+| `take_snapshot` | Capture a structured DOM snapshot with stable UIDs | Bundled injected tree walker + snapshot formatter |
 | `evaluate_script` | Execute JavaScript | `driver.executeScript(script)` |
 
 ### Developer Tools

@@ -25,6 +25,9 @@ export interface TreeWalkerOptions {
   includeAll?: boolean;
   includeIframes?: boolean;
   collectorMaxTextLength?: number | null;
+  existingUidMap?: UidEntry[];
+  nextUidCounter?: number;
+  includeRoot?: boolean;
 }
 
 /**
@@ -52,11 +55,27 @@ export function walkTree(
   snapshotId: number,
   options: TreeWalkerOptions = {}
 ): TreeWalkerResult {
-  const { includeAll = false, includeIframes = true, collectorMaxTextLength } = options;
+  const {
+    includeAll = false,
+    includeIframes = true,
+    collectorMaxTextLength,
+    existingUidMap = [],
+    nextUidCounter = 0,
+    includeRoot = false,
+  } = options;
 
-  let counter = 0;
+  let counter = nextUidCounter;
   const uidMap: UidEntry[] = [];
   let truncated = false;
+  const existingByCss = new Map<string, UidEntry>();
+  const existingByXPath = new Map<string, UidEntry>();
+
+  for (const entry of existingUidMap) {
+    existingByCss.set(entry.css, entry);
+    if (entry.xpath) {
+      existingByXPath.set(entry.xpath, entry);
+    }
+  }
 
   function walk(el: Element, depth: number): WalkResult {
     // Check limits
@@ -72,16 +91,17 @@ export function walkTree(
 
     // Check relevance (except root)
     const tag = el.tagName.toLowerCase();
-    const isRoot = tag === 'body' || tag === 'html';
+    const isRoot = depth === 0;
+    const isDocumentRoot = tag === 'body' || tag === 'html';
 
     // Determine if element is relevant based on mode
     let elementIsRelevant: boolean;
     if (includeAll) {
       // Include all mode: only check visibility
-      elementIsRelevant = isRoot || isVisible(el);
+      elementIsRelevant = (includeRoot && isRoot) || isDocumentRoot || isVisible(el);
     } else {
       // Standard mode: use full relevance filter
-      elementIsRelevant = isRoot || isRelevant(el);
+      elementIsRelevant = (includeRoot && isRoot) || isDocumentRoot || isRelevant(el);
     }
 
     // Always walk children first (bubble-up pattern)
@@ -137,9 +157,11 @@ export function walkTree(
     }
 
     // Element IS relevant - create node
-    const uid = `${snapshotId}_${counter++}`;
     const css = generateCssSelector(el);
     const xpath = generateXPath(el);
+    const existingEntry =
+      existingByCss.get(css) ?? (xpath ? existingByXPath.get(xpath) : undefined);
+    const uid = existingEntry?.uid ?? `${snapshotId}_${counter++}`;
 
     uidMap.push({ uid, css, xpath });
 

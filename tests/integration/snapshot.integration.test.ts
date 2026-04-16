@@ -171,6 +171,52 @@ describe('Snapshot Integration Tests', () => {
     );
   }, 10000);
 
+  it('should take a subtree snapshot rooted at a UID and preserve unchanged UIDs', async () => {
+    const fixturePath = `file://${fixturesPath}/e2e-app.html`;
+    await firefox.navigate(fixturePath);
+    await waitForPageLoad();
+
+    const broadSnapshot = await firefox.takeSnapshot({ maxDepth: 3 });
+    const todoPageEntry = broadSnapshot.json.uidMap.find((entry) => entry.css === 'div#todoPage');
+    const todoInputEntry = broadSnapshot.json.uidMap.find(
+      (entry) => entry.css === 'input#todoInput'
+    );
+
+    expect(todoPageEntry).toBeDefined();
+    expect(todoInputEntry).toBeDefined();
+
+    const subtreeSnapshot = await firefox.takeSnapshot({
+      uid: todoPageEntry!.uid,
+      maxDepth: 2,
+    });
+
+    expect(subtreeSnapshot.json.snapshotId).toBe(broadSnapshot.json.snapshotId);
+    expect(subtreeSnapshot.json.root.uid).toBe(todoPageEntry!.uid);
+    expect(subtreeSnapshot.json.uidMap.find((entry) => entry.css === 'input#todoInput')?.uid).toBe(
+      todoInputEntry!.uid
+    );
+  }, 10000);
+
+  it('should apply maxDepth relative to a UID-rooted subtree', async () => {
+    const fixturePath = `file://${fixturesPath}/e2e-app.html`;
+    await firefox.navigate(fixturePath);
+    await waitForPageLoad();
+
+    const broadSnapshot = await firefox.takeSnapshot({ maxDepth: 3 });
+    const todoPageEntry = broadSnapshot.json.uidMap.find((entry) => entry.css === 'div#todoPage');
+
+    expect(todoPageEntry).toBeDefined();
+
+    const shallowSubtree = await firefox.takeSnapshot({
+      uid: todoPageEntry!.uid,
+      maxDepth: 1,
+    });
+
+    const childTags = shallowSubtree.json.root.children.map((child) => child.tag);
+    expect(childTags).toContain('h2');
+    expect(childTags).toContain('div');
+  }, 10000);
+
   it('should exclude children of hidden parents even in includeAll mode', async () => {
     const fixturePath = `file://${fixturesPath}/visibility.html`;
     await firefox.navigate(fixturePath);

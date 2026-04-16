@@ -70,6 +70,44 @@ describe('UidResolver', () => {
       // New UID should be found
       expect(resolver.resolveUidToSelector('2_button')).toBe('#new');
     });
+
+    it('should merge UID mappings into the current snapshot', () => {
+      const firstMap: UidEntry[] = [{ uid: '1_0', css: '#old', xpath: '//old' }];
+      const secondMap: UidEntry[] = [{ uid: '1_1', css: '#new', xpath: '//new' }];
+
+      resolver.setSnapshotId(1);
+      resolver.storeUidMappings(firstMap);
+      resolver.mergeUidMappings(secondMap);
+
+      expect(resolver.resolveUidToSelector('1_0')).toBe('#old');
+      expect(resolver.resolveUidToSelector('1_1')).toBe('#new');
+    });
+  });
+
+  describe('getUidMappings / getNextUidCounter / getUidEntry', () => {
+    beforeEach(() => {
+      resolver.setSnapshotId(3);
+      resolver.storeUidMappings([
+        { uid: '3_0', css: '#root', xpath: '//body' },
+        { uid: '3_4', css: '#child', xpath: '//button[@id="child"]' },
+      ]);
+    });
+
+    it('should return stored uid mappings', () => {
+      expect(resolver.getUidMappings()).toHaveLength(2);
+    });
+
+    it('should compute the next UID counter from stored mappings', () => {
+      expect(resolver.getNextUidCounter()).toBe(5);
+    });
+
+    it('should return a stored UID entry', () => {
+      expect(resolver.getUidEntry('3_4')).toEqual({
+        uid: '3_4',
+        css: '#child',
+        xpath: '//button[@id="child"]',
+      });
+    });
   });
 
   describe('validateUid', () => {

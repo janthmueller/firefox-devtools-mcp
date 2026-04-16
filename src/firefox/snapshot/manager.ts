@@ -18,6 +18,7 @@ import { UidResolver } from './resolver.js';
 export interface SnapshotOptions {
   includeAll?: boolean;
   selector?: string;
+  uid?: string;
   collectorMaxTextLength?: number | null;
   formatterMaxTextLength?: number | null;
 }
@@ -91,9 +92,22 @@ export class SnapshotManager {
    * Returns text and JSON with snapshotId, no DOM mutations
    */
   async takeSnapshot(options?: SnapshotOptions): Promise<Snapshot> {
-    const snapshotId = ++this.currentSnapshotId;
-    this.resolver.setSnapshotId(snapshotId);
-    this.resolver.clear();
+    const rootUid = options?.uid;
+    const isUidRootedSnapshot = rootUid !== undefined;
+    let snapshotId: number;
+
+    if (isUidRootedSnapshot) {
+      if (this.resolver.getSnapshotId() === 0) {
+        throw new Error(
+          'No active snapshot available for UID-rooted snapshot. Take a fresh snapshot first.'
+        );
+      }
+      snapshotId = this.resolver.getSnapshotId();
+    } else {
+      snapshotId = ++this.currentSnapshotId;
+      this.resolver.setSnapshotId(snapshotId);
+      this.resolver.clear();
+    }
 
     logDebug(`Taking snapshot (ID: ${snapshotId})...`);
 
@@ -120,6 +134,10 @@ export class SnapshotManager {
       logDebug(`Snapshot generation failed: ${result.selectorError}`);
       throw new Error(result.selectorError);
     }
+    if (result?.uidError) {
+      logDebug(`Snapshot generation failed: ${result.uidError}`);
+      throw new Error(result.uidError);
+    }
 
     if (!result?.tree) {
       const errorMsg = 'Unknown error';
@@ -128,7 +146,11 @@ export class SnapshotManager {
     }
 
     // Store UID mappings in resolver
-    this.resolver.storeUidMappings(result.uidMap);
+    if (isUidRootedSnapshot) {
+      this.resolver.mergeUidMappings(result.uidMap);
+    } else {
+      this.resolver.storeUidMappings(result.uidMap);
+    }
 
     // Create snapshot object
     const snapshotJson: SnapshotJson = {
@@ -185,6 +207,15 @@ export class SnapshotManager {
     options?: SnapshotOptions
   ): Promise<InjectedScriptResult> {
     const scriptSource = this.getInjectedScript();
+    const scriptOptions: Record<string, unknown> = { ...(options || {}) };
+
+    if (options?.uid) {
+      const rootEntry = this.resolver.getUidEntry(options.uid);
+      scriptOptions.rootCss = rootEntry.css;
+      scriptOptions.rootXPath = rootEntry.xpath ?? null;
+      scriptOptions.existingUidMap = this.resolver.getUidMappings();
+      scriptOptions.nextUidCounter = this.resolver.getNextUidCounter();
+    }
 
     // Inject and execute the bundled script
     // The script exposes window.__createSnapshot via IIFE global
@@ -203,7 +234,7 @@ export class SnapshotManager {
       return window.__createSnapshot(arguments[0], arguments[1]);
       `,
       snapshotId,
-      options || {}
+      scriptOptions
     );
 
     return result;

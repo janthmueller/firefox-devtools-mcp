@@ -93,6 +93,7 @@ Then call tools like:
 - `take_snapshot` then `click_by_uid` / `fill_by_uid`
   - use `collectorMaxTextLength` and `formatterMaxTextLength` to control per-node text truncation
   - omit the values for default compact previews, set them to `null` for uncapped node text
+  - pass `uid` to zoom into a previously discovered subtree root while keeping unchanged UIDs stable
 - `list_network_requests` (always‑on capture), `get_network_request`
 - `screenshot_page`, `list_console_messages`
 
