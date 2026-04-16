@@ -11,6 +11,7 @@ import type { TreeWalkerResult } from './treeWalker.js';
  */
 export interface CreateSnapshotOptions extends TreeWalkerOptions {
   selector?: string;
+  formatterMaxTextLength?: number | null;
 }
 
 /**
@@ -60,6 +61,9 @@ export function createSnapshot(
     };
     if (options?.includeAll !== undefined) {
       treeOptions.includeAll = options.includeAll;
+    }
+    if (options?.collectorMaxTextLength !== undefined) {
+      treeOptions.collectorMaxTextLength = options.collectorMaxTextLength;
     }
     const result = walkTree(rootElement, snapshotId, treeOptions);
 

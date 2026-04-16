@@ -24,6 +24,7 @@ const MAX_NODES = 1000;
 export interface TreeWalkerOptions {
   includeAll?: boolean;
   includeIframes?: boolean;
+  collectorMaxTextLength?: number | null;
 }
 
 /**
@@ -51,7 +52,7 @@ export function walkTree(
   snapshotId: number,
   options: TreeWalkerOptions = {}
 ): TreeWalkerResult {
-  const { includeAll = false, includeIframes = true } = options;
+  const { includeAll = false, includeIframes = true, collectorMaxTextLength } = options;
 
   let counter = 0;
   const uidMap: UidEntry[] = [];
@@ -145,8 +146,8 @@ export function walkTree(
     // Collect attributes
     const htmlEl = el as HTMLElement;
     const roleAttr = el.getAttribute('role');
-    const nameAttr = getElementName(el);
-    const textAttr = getTextContent(el);
+    const nameAttr = getElementName(el, collectorMaxTextLength);
+    const textAttr = getTextContent(el, collectorMaxTextLength);
     const valueAttr = (htmlEl as any).value;
     const hrefAttr = (htmlEl as any).href;
     const srcAttr = (htmlEl as any).src;

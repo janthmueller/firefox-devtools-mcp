@@ -8,7 +8,7 @@ import type { SnapshotNode } from './types.js';
 /**
  * Max attribute value length (aggressive truncation for token efficiency)
  */
-const MAX_ATTR_LENGTH = 30;
+const DEFAULT_MAX_TEXT_LENGTH = 30;
 
 /**
  * Formatting options
@@ -17,6 +17,7 @@ export interface FormatOptions {
   includeAttributes?: boolean;
   includeText?: boolean;
   maxDepth?: number;
+  maxTextLength?: number | null;
 }
 
 /**
@@ -27,7 +28,7 @@ export function formatSnapshotTree(
   depth = 0,
   options: FormatOptions = {}
 ): string {
-  const { includeAttributes = true, includeText = true, maxDepth } = options;
+  const { includeAttributes = true, includeText = true, maxDepth, maxTextLength } = options;
 
   // Check max depth
   if (maxDepth !== undefined && depth >= maxDepth) {
@@ -45,7 +46,7 @@ export function formatSnapshotTree(
 
   // Name (in quotes) - only if exists
   if (node.name) {
-    attrs.push(`"${truncate(node.name, MAX_ATTR_LENGTH)}"`);
+    attrs.push(`"${truncate(node.name, maxTextLength)}"`);
   }
 
   // Tag (for debugging)
@@ -55,22 +56,22 @@ export function formatSnapshotTree(
 
   // Value
   if (node.value) {
-    attrs.push(`value="${truncate(node.value, MAX_ATTR_LENGTH)}"`);
+    attrs.push(`value="${truncate(node.value, maxTextLength)}"`);
   }
 
   // Href
   if (node.href) {
-    attrs.push(`href="${truncate(node.href, MAX_ATTR_LENGTH)}"`);
+    attrs.push(`href="${truncate(node.href, maxTextLength)}"`);
   }
 
   // Src
   if (node.src) {
-    attrs.push(`src="${truncate(node.src, MAX_ATTR_LENGTH)}"`);
+    attrs.push(`src="${truncate(node.src, maxTextLength)}"`);
   }
 
   // Text (controlled by includeText option)
   if (includeText && node.text) {
-    attrs.push(`text="${truncate(node.text, MAX_ATTR_LENGTH)}"`);
+    attrs.push(`text="${truncate(node.text, maxTextLength)}"`);
   }
 
   // ARIA attributes (controlled by includeAttributes option)
@@ -141,7 +142,7 @@ export function formatSnapshotTree(
   if (node.isIframe) {
     attrs.push('[iframe');
     if (node.frameSrc) {
-      attrs.push(`src="${truncate(node.frameSrc, MAX_ATTR_LENGTH)}"`);
+      attrs.push(`src="${truncate(node.frameSrc, maxTextLength)}"`);
     }
     if (node.crossOrigin) {
       attrs.push('cross-origin');
@@ -162,9 +163,17 @@ export function formatSnapshotTree(
 /**
  * Truncate string to max length
  */
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen) {
+function truncate(str: string, maxLen: number | null | undefined): string {
+  if (maxLen === null) {
     return str;
   }
-  return str.substring(0, maxLen - 3) + '...';
+  const effectiveMaxLength = maxLen ?? DEFAULT_MAX_TEXT_LENGTH;
+
+  if (effectiveMaxLength <= 0) {
+    throw new Error('maxTextLength must be positive or null');
+  }
+  if (str.length <= effectiveMaxLength) {
+    return str;
+  }
+  return str.substring(0, effectiveMaxLength - 3) + '...';
 }

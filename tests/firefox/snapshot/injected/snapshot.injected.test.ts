@@ -108,6 +108,22 @@ describe('snapshot.injected - createSnapshot', () => {
     });
   });
 
+  describe('collectorMaxTextLength option', () => {
+    it('truncates collected direct text when a numeric cap is provided', () => {
+      document.body.innerHTML = '<div>abcdefghijklmnopqrstuvwxyz</div>';
+
+      const result = createSnapshot(1, { collectorMaxTextLength: 5 });
+      expect(result.tree?.children[0]?.text).toBe('abcde');
+    });
+
+    it('preserves full direct text when set to null', () => {
+      document.body.innerHTML = '<div>abcdefghijklmnopqrstuvwxyz</div>';
+
+      const result = createSnapshot(1, { collectorMaxTextLength: null });
+      expect(result.tree?.children[0]?.text).toBe('abcdefghijklmnopqrstuvwxyz');
+    });
+  });
+
   describe('window global', () => {
     it('registers __createSnapshot on window', () => {
       expect((window as any).__createSnapshot).toBeDefined();

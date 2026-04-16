@@ -174,6 +174,34 @@ describe('Snapshot Formatter', () => {
       expect(result.length).toBeLessThan(longText.length + 50);
     });
 
+    it('should respect an explicit formatter text cap', () => {
+      const node: SnapshotNode = {
+        uid: 'uid-8b',
+        role: 'text',
+        tag: 'span',
+        text: 'abcdefghijklmnopqrstuvwxyz',
+        children: [],
+      };
+
+      const result = formatSnapshotTree(node, 0, { maxTextLength: 10 });
+      expect(result).toContain('text="abcdefg..."');
+    });
+
+    it('should preserve full text when formatter maxTextLength is null', () => {
+      const longText = 'abcdefghijklmnopqrstuvwxyz';
+      const node: SnapshotNode = {
+        uid: 'uid-8c',
+        role: 'text',
+        tag: 'span',
+        text: longText,
+        children: [],
+      };
+
+      const result = formatSnapshotTree(node, 0, { maxTextLength: null });
+      expect(result).toContain(`text="${longText}"`);
+      expect(result).not.toContain('...');
+    });
+
     it('should show tag when role differs from tag', () => {
       const node: SnapshotNode = {
         uid: 'uid-9',

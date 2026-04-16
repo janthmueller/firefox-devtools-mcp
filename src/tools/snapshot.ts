@@ -40,6 +40,16 @@ export const takeSnapshotTool = {
         type: 'string',
         description: 'CSS selector to scope snapshot to specific element (e.g., "#app")',
       },
+      collectorMaxTextLength: {
+        anyOf: [{ type: 'number' }, { type: 'null' }],
+        description:
+          'Per-node text cap during snapshot collection. Omit to use the default compact preview behavior, set null for uncapped text.',
+      },
+      formatterMaxTextLength: {
+        anyOf: [{ type: 'number' }, { type: 'null' }],
+        description:
+          'Per-node text cap when formatting snapshot output. Omit to use the default compact preview behavior, set null for uncapped text.',
+      },
     },
   },
 };
@@ -78,6 +88,8 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       maxDepth,
       includeAll = false,
       selector,
+      collectorMaxTextLength,
+      formatterMaxTextLength,
     } = (args as {
       maxLines?: number;
       includeAttributes?: boolean;
@@ -85,7 +97,12 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       maxDepth?: number;
       includeAll?: boolean;
       selector?: string;
+      collectorMaxTextLength?: number | null;
+      formatterMaxTextLength?: number | null;
     }) || {};
+
+    validateTextLengthControl('collectorMaxTextLength', collectorMaxTextLength);
+    validateTextLengthControl('formatterMaxTextLength', formatterMaxTextLength);
 
     // Apply hard cap on maxLines to prevent token overflow
     const maxLines = Math.min(Math.max(1, requestedMaxLines), TOKEN_LIMITS.MAX_SNAPSHOT_LINES_CAP);
@@ -102,6 +119,12 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
     if (selector) {
       snapshotOptions.selector = selector;
     }
+    if (collectorMaxTextLength !== undefined) {
+      snapshotOptions.collectorMaxTextLength = collectorMaxTextLength;
+    }
+    if (formatterMaxTextLength !== undefined) {
+      snapshotOptions.formatterMaxTextLength = formatterMaxTextLength;
+    }
     const snapshot = await firefox.takeSnapshot(
       Object.keys(snapshotOptions).length > 0 ? snapshotOptions : undefined
     );
@@ -114,6 +137,9 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
     };
     if (maxDepth !== undefined) {
       options.maxDepth = maxDepth;
+    }
+    if (formatterMaxTextLength !== undefined) {
+      options.maxTextLength = formatterMaxTextLength;
     }
     const formattedText = formatSnapshotTree(snapshot.json.root, 0, options);
 
@@ -154,6 +180,18 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
           'The page may not be fully loaded or accessible.'
       )
     );
+  }
+}
+
+function validateTextLengthControl(
+  name: 'collectorMaxTextLength' | 'formatterMaxTextLength',
+  value: number | null | undefined
+): void {
+  if (value === undefined || value === null) {
+    return;
+  }
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${name} must be a positive number or null`);
   }
 }
 

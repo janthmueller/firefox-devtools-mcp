@@ -60,6 +60,20 @@ describe('Snapshot Tools', () => {
       expect(properties?.selector.type).toBe('string');
     });
 
+    it('takeSnapshotTool should expose text truncation controls', () => {
+      const { properties } = takeSnapshotTool.inputSchema;
+      expect(properties?.collectorMaxTextLength).toBeDefined();
+      expect(properties?.formatterMaxTextLength).toBeDefined();
+      expect(properties?.collectorMaxTextLength.anyOf).toEqual([
+        { type: 'number' },
+        { type: 'null' },
+      ]);
+      expect(properties?.formatterMaxTextLength.anyOf).toEqual([
+        { type: 'number' },
+        { type: 'null' },
+      ]);
+    });
+
     it('resolveUidToSelectorTool should require uid', () => {
       const { properties, required } = resolveUidToSelectorTool.inputSchema;
       expect(properties).toBeDefined();

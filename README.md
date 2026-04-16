@@ -91,6 +91,8 @@ Then call tools like:
 - `list_pages`, `select_page`, `navigate_page`
 - `extract_text` for rendered or DOM text from the page or a scoped region
 - `take_snapshot` then `click_by_uid` / `fill_by_uid`
+  - use `collectorMaxTextLength` and `formatterMaxTextLength` to control per-node text truncation
+  - omit the values for default compact previews, set them to `null` for uncapped node text
 - `list_network_requests` (always‑on capture), `get_network_request`
 - `screenshot_page`, `list_console_messages`
 

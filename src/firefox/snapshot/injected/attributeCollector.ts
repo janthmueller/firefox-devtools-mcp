@@ -8,13 +8,13 @@ import { isFocusable, isInteractive } from './elementCollector.js';
 /**
  * Max text length
  */
-const MAX_TEXT_LENGTH = 100;
+const DEFAULT_MAX_TEXT_LENGTH = 100;
 
 /**
  * Get element name/label
  * Checks aria-label, associated label, placeholder, title, alt
  */
-export function getElementName(el: Element): string | undefined {
+export function getElementName(el: Element, maxTextLength?: number | null): string | undefined {
   // aria-label
   if (el.hasAttribute('aria-label')) {
     return el.getAttribute('aria-label') || undefined;
@@ -48,7 +48,7 @@ export function getElementName(el: Element): string | undefined {
   // text content for buttons/links/headings
   const tag = el.tagName.toLowerCase();
   if (['button', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].indexOf(tag) !== -1) {
-    return getTextContent(el);
+    return getTextContent(el, maxTextLength);
   }
 
   return undefined;
@@ -57,7 +57,7 @@ export function getElementName(el: Element): string | undefined {
 /**
  * Get direct text content (not from deep children)
  */
-export function getTextContent(el: Element): string | undefined {
+export function getTextContent(el: Element, maxTextLength?: number | null): string | undefined {
   let text = '';
   for (let i = 0; i < el.childNodes.length; i++) {
     const node = el.childNodes[i];
@@ -69,7 +69,16 @@ export function getTextContent(el: Element): string | undefined {
   if (!trimmed) {
     return undefined;
   }
-  return trimmed.substring(0, MAX_TEXT_LENGTH);
+  if (maxTextLength === null) {
+    return trimmed;
+  }
+
+  const effectiveMaxTextLength = maxTextLength ?? DEFAULT_MAX_TEXT_LENGTH;
+  if (effectiveMaxTextLength <= 0) {
+    throw new Error('collectorMaxTextLength must be positive or null');
+  }
+
+  return trimmed.substring(0, effectiveMaxTextLength);
 }
 
 /**
