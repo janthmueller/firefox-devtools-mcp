@@ -1,16 +1,25 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha || github.ref }}
   cancel-in-progress: true
 
 jobs:
   release:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,6 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -47,15 +57,10 @@ jobs:
       - name: Verify packaged artifact startup
         run: npm run test:package-artifact
 
-      - name: Install Firefox
-        uses: browser-actions/setup-firefox@latest
-        with:
-          firefox-version: latest
-
-      - name: Test
-        run: npm run test:run
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF: refs/heads/main
+          GITHUB_REF_NAME: main
+          GITHUB_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: npm run release

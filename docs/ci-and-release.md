@@ -17,7 +17,7 @@ Workflows
   - Fast checks on PR open/update: lint, format check, typecheck, unit tests, build, packaged-artifact smoke test.
 
 - Release (.github/workflows/publish.yml)
-  - On push to `main` (and via manual dispatch): runs checks, verifies the packaged CLI startup path, then executes `semantic-release`.
+  - On successful `CI` completion for `main` (and via manual dispatch): re-checks build/package integrity, then executes `semantic-release`.
   - `semantic-release` analyzes conventional commits, updates `CHANGELOG.md`, creates the next version tag, publishes `firewatch-mcp` to npm with provenance, and creates a GitHub Release with the npm tarball attached.
 
 Secrets
@@ -27,14 +27,15 @@ Secrets
 Release flow
 
 1. Merge conventional commits to `main`.
-2. The `publish` workflow runs `semantic-release` after checks pass.
-3. `semantic-release` determines the next semantic version from commit messages:
+2. The `CI` workflow runs the full Firefox/integration suite on the merge commit.
+3. If `CI` succeeds on `main`, the `publish` workflow runs `semantic-release`.
+4. `semantic-release` determines the next semantic version from commit messages:
    - `fix:` -> patch
    - `feat:` -> minor
    - `!` or `BREAKING CHANGE:` -> major
-4. If a release is needed, `semantic-release` updates `CHANGELOG.md`, creates the release commit and git tag, publishes `firewatch-mcp` to npm via trusted publishing, and creates the GitHub Release.
-5. For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
-6. The workflow checkout must keep GitHub credentials available so the semantic-release git plugin can push the release commit back to `main`.
+5. If a release is needed, `semantic-release` updates `CHANGELOG.md`, creates the release commit and git tag, publishes `firewatch-mcp` to npm via trusted publishing, and creates the GitHub Release.
+6. For npm publishing to work, the `firewatch-mcp` package on npm must trust the GitHub Actions workflow `publish.yml` for the `janthmueller/firewatch-mcp` repository.
+7. The workflow checkout must keep GitHub credentials available so the semantic-release git plugin can push the release commit back to `main`.
 
 Conventional commit examples
 
@@ -58,4 +59,5 @@ Notes
 - Conventional commit messages on `main` now drive versioning and release notes.
 - `CHANGELOG.md` is maintained automatically by semantic-release and committed back to `main` during releases.
 - A packaged-artifact smoke test (`npm pack` + `node dist/index.js --version`) runs in PR, CI, and release workflows to catch bundle-only startup regressions before publish.
+- Release now depends on a successful `CI` run for the same `main` commit instead of running the full Firefox suite itself.
 - Use `@latest` in README examples to encourage npx usage.
