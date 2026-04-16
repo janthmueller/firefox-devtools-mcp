@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/janthmueller/firewatch-mcp/compare/v1.1.0...v1.2.0) (2026-04-16)
+
+
+### Bug Fixes
+
+* avoid undefined snapshot format option ([764effa](https://github.com/janthmueller/firewatch-mcp/commit/764effab6235d381a28e27b68125cd453f1aabf8))
+
+
+### Features
+
+* add snapshot text truncation controls ([efb4d48](https://github.com/janthmueller/firewatch-mcp/commit/efb4d4857ce8f1a18c63f157b65399b7b4dc35fb))
+
 # [1.1.0](https://github.com/janthmueller/firewatch-mcp/compare/v1.0.0...v1.1.0) (2026-04-16)
 
 
