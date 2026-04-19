@@ -138,6 +138,13 @@ export class SnapshotManager {
       logDebug(`Snapshot generation failed: ${result.uidError}`);
       throw new Error(result.uidError);
     }
+    if (result?.snapshotError) {
+      const errorMsg = options?.uid
+        ? `${result.snapshotError} The targeted subtree may have changed while the snapshot was being generated; take a fresh root snapshot and retry.`
+        : result.snapshotError;
+      logDebug(`Snapshot generation failed: ${errorMsg}`);
+      throw new Error(`Failed to generate snapshot: ${errorMsg}`);
+    }
 
     if (!result?.tree) {
       const errorMsg = 'Unknown error';

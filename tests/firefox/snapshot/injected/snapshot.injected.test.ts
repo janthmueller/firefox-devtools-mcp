@@ -130,4 +130,25 @@ describe('snapshot.injected - createSnapshot', () => {
       expect(typeof (window as any).__createSnapshot).toBe('function');
     });
   });
+
+  describe('error preservation', () => {
+    it('preserves unexpected snapshot errors instead of dropping them', () => {
+      const originalChildren = Object.getOwnPropertyDescriptor(Element.prototype, 'children');
+      const childrenGetter = vi
+        .spyOn(Element.prototype, 'children', 'get')
+        .mockImplementation(function (this: Element) {
+          if (this === document.body) {
+            throw new Error('dynamic subtree detached');
+          }
+          return originalChildren?.get?.call(this) ?? ([] as unknown as HTMLCollection);
+        });
+
+      const result = createSnapshot(1);
+
+      expect(result.tree).toBeNull();
+      expect(result.snapshotError).toContain('dynamic subtree detached');
+
+      childrenGetter.mockRestore();
+    });
+  });
 });

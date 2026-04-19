@@ -23,6 +23,7 @@ export interface CreateSnapshotOptions extends TreeWalkerOptions {
 export interface CreateSnapshotResult extends TreeWalkerResult {
   selectorError?: string;
   uidError?: string;
+  snapshotError?: string;
 }
 
 /**
@@ -96,11 +97,12 @@ export function createSnapshot(
     }
 
     return result;
-  } catch {
+  } catch (error) {
     return {
       tree: null,
       uidMap: [],
       truncated: false,
+      snapshotError: getErrorMessage(error),
     };
   }
 }
@@ -138,4 +140,11 @@ function resolveRootElement(rootXPath?: string | null, rootCss?: string): Elemen
   } catch {
     return null;
   }
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
