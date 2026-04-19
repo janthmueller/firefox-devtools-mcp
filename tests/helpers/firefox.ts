@@ -35,10 +35,18 @@ export async function closeFirefox(firefox: FirefoxClient | undefined | null): P
     return;
   }
   try {
-    await firefox.close();
+    await Promise.race([
+      firefox.close(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timed out while closing Firefox'));
+        }, 5000);
+      }),
+    ]);
   } catch (error) {
-    // Ignore errors during cleanup
+    // Ignore errors during cleanup, but clear client state so the test hook can finish.
     console.warn('Error closing Firefox:', error);
+    firefox.reset();
   }
 }
 
