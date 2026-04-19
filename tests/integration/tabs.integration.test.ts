@@ -158,6 +158,84 @@ describe('Tab Management Integration Tests', () => {
     expect(snapshot1.json.snapshotId).not.toBe(snapshot2.json.snapshotId);
   }, 30000);
 
+  it('should keep selected tab and snapshot state isolated between workspaces', async () => {
+    const humanWorkspaceId = 'human';
+    const agentWorkspaceId = 'agent-a';
+    const simplePath = `file://${fixturesPath}/simple.html`;
+    const formPath = `file://${fixturesPath}/form.html`;
+
+    await firefox.navigate(simplePath, humanWorkspaceId);
+    await waitForPageLoad();
+    const humanTabIndex = firefox.getSelectedTabIdx(humanWorkspaceId);
+
+    const agentTabIndex = await firefox.createNewPage(formPath, agentWorkspaceId);
+    await waitForPageLoad();
+
+    expect(firefox.getSelectedTabIdx(humanWorkspaceId)).toBe(humanTabIndex);
+    expect(firefox.getSelectedTabIdx(agentWorkspaceId)).toBe(agentTabIndex);
+
+    const humanSnapshot = await firefox.takeSnapshot(undefined, humanWorkspaceId);
+    const humanHasClickButton = humanSnapshot.json.uidMap.some(
+      (entry) => entry.css.includes('#clickBtn') || entry.css.includes('clickBtn')
+    );
+    expect(humanHasClickButton).toBe(true);
+
+    const agentSnapshot = await firefox.takeSnapshot(undefined, agentWorkspaceId);
+    const agentEmailElement = agentSnapshot.json.uidMap.find(
+      (entry) => entry.css.includes('#email') || entry.css.includes('email')
+    );
+
+    expect(agentEmailElement).toBeDefined();
+    expect(agentEmailElement?.uid).toBeDefined();
+
+    const agentSelectorBefore = firefox.resolveUidToSelector(
+      agentEmailElement!.uid,
+      agentWorkspaceId
+    );
+
+    await firefox.takeSnapshot(undefined, humanWorkspaceId);
+
+    const agentSelectorAfter = firefox.resolveUidToSelector(
+      agentEmailElement!.uid,
+      agentWorkspaceId
+    );
+    expect(agentSelectorAfter).toBe(agentSelectorBefore);
+    expect(firefox.getSelectedTabIdx(humanWorkspaceId)).toBe(humanTabIndex);
+    expect(firefox.getSelectedTabIdx(agentWorkspaceId)).toBe(agentTabIndex);
+  }, 30000);
+
+  it('should preserve workspace tab identity after another workspace closes a lower-index tab', async () => {
+    const humanWorkspaceId = 'human';
+    const agentWorkspaceId = 'agent-a';
+    const simplePath = `file://${fixturesPath}/simple.html`;
+    const formPath = `file://${fixturesPath}/form.html`;
+
+    await firefox.navigate(simplePath, humanWorkspaceId);
+    await waitForPageLoad();
+    const humanTabIndex = firefox.getSelectedTabIdx(humanWorkspaceId);
+
+    const agentTabIndex = await firefox.createNewPage(formPath, agentWorkspaceId);
+    await waitForPageLoad();
+
+    const agentSnapshotBefore = await firefox.takeSnapshot(undefined, agentWorkspaceId);
+    const agentEmailElement = agentSnapshotBefore.json.uidMap.find(
+      (entry) => entry.css.includes('#email') || entry.css.includes('email')
+    );
+    expect(agentEmailElement).toBeDefined();
+
+    await firefox.closeTab(humanTabIndex, humanWorkspaceId);
+    await waitForPageLoad();
+
+    const agentSelectedTabIndex = firefox.getSelectedTabIdx(agentWorkspaceId);
+    expect(agentSelectedTabIndex).toBeGreaterThanOrEqual(0);
+
+    const agentSnapshotAfter = await firefox.takeSnapshot(undefined, agentWorkspaceId);
+    const agentStillHasEmailField = agentSnapshotAfter.json.uidMap.some(
+      (entry) => entry.css.includes('#email') || entry.css.includes('email')
+    );
+    expect(agentStillHasEmailField).toBe(true);
+  }, 30000);
+
   it('should get selected tab index', async () => {
     await firefox.refreshTabs();
     const selectedIdx = firefox.getSelectedTabIdx();

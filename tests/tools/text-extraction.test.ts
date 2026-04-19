@@ -55,12 +55,13 @@ describe('Text Extraction Tools', () => {
 
       const result = await handleExtractText({});
 
-      expect(mockExtractText).toHaveBeenCalledWith({
-        scope: 'page',
-        selector: undefined,
-        uid: undefined,
-        source: 'rendered',
-      });
+      expect(mockExtractText).toHaveBeenCalledWith(
+        {
+          scope: 'page',
+          source: 'rendered',
+        },
+        undefined
+      );
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('Visible page text');
     });
@@ -74,12 +75,14 @@ describe('Text Extraction Tools', () => {
         source: 'dom',
       });
 
-      expect(mockExtractText).toHaveBeenCalledWith({
-        scope: 'selector',
-        selector: '#content',
-        uid: undefined,
-        source: 'dom',
-      });
+      expect(mockExtractText).toHaveBeenCalledWith(
+        {
+          scope: 'selector',
+          selector: '#content',
+          source: 'dom',
+        },
+        undefined
+      );
       expect(result.content[0].text).toContain('scope=selector');
       expect(result.content[0].text).toContain('source=dom');
     });

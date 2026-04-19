@@ -8,6 +8,10 @@ import type { McpToolResponse } from '../types/common.js';
 import type { ExtractTextScope, ExtractTextSource } from '../firefox/types.js';
 
 const DEFAULT_MAX_LENGTH = 20_000;
+const WORKSPACE_ID_SCHEMA = {
+  type: 'string',
+  description: 'Workspace identifier. Defaults to the human workspace when omitted.',
+} as const;
 
 export const extractTextTool = {
   name: 'extract_text',
@@ -37,6 +41,7 @@ export const extractTextTool = {
         type: 'number',
         description: 'Maximum characters to return (default: 20000)',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
   },
 };
@@ -47,12 +52,14 @@ export async function handleExtractText(args: unknown): Promise<McpToolResponse>
       scope = 'page',
       selector,
       uid,
+      workspaceId,
       source = 'rendered',
       maxLength: requestedMaxLength = DEFAULT_MAX_LENGTH,
     } = (args as {
       scope?: ExtractTextScope;
       selector?: string;
       uid?: string;
+      workspaceId?: string;
       source?: ExtractTextSource;
       maxLength?: number;
     }) || {};
@@ -100,7 +107,7 @@ export async function handleExtractText(args: unknown): Promise<McpToolResponse>
 
     let extractedText: string;
     try {
-      extractedText = await firefox.extractText(extractOptions);
+      extractedText = await firefox.extractText(extractOptions, workspaceId);
     } catch (error) {
       if (scope === 'uid' && uid) {
         throw handleUidError(error as Error, uid);

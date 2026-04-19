@@ -11,6 +11,14 @@ import { DomInteractions } from './dom.js';
 import { PageManagement } from './pages.js';
 import { SnapshotManager, type Snapshot, type SnapshotOptions } from './snapshot/index.js';
 
+const DEFAULT_WORKSPACE_ID = 'human';
+
+interface WorkspaceState {
+  selectedTabIndex: number;
+  currentContextId: string | null;
+  snapshot: SnapshotManager;
+}
+
 /**
  * Main Firefox Client facade
  * Delegates to modular components for clean separation of concerns
@@ -19,9 +27,8 @@ export class FirefoxClient {
   private core: FirefoxCore;
   private consoleEvents: ConsoleEvents | null = null;
   private networkEvents: NetworkEvents | null = null;
-  private dom: DomInteractions | null = null;
   private pages: PageManagement | null = null;
-  private snapshot: SnapshotManager | null = null;
+  private workspaces = new Map<string, WorkspaceState>();
 
   constructor(options: FirefoxLaunchOptions) {
     this.core = new FirefoxCore(options);
@@ -35,14 +42,17 @@ export class FirefoxClient {
 
     const driver = this.core.getDriver();
 
-    // Initialize snapshot manager first
-    this.snapshot = new SnapshotManager(driver);
+    // Initialize default human workspace
+    this.workspaces.set(DEFAULT_WORKSPACE_ID, {
+      selectedTabIndex: 0,
+      currentContextId: null,
+      snapshot: new SnapshotManager(driver),
+    });
 
     // Create centralized navigation handler for lifecycle hooks
     const onNavigate = () => {
-      // Clear snapshot on any navigation
-      if (this.snapshot) {
-        this.snapshot.clear();
+      for (const workspace of this.workspaces.values()) {
+        workspace.snapshot.clear();
       }
     };
 
@@ -66,16 +76,18 @@ export class FirefoxClient {
       });
     }
 
-    // Initialize DOM with UID resolver callback
-    this.dom = new DomInteractions(driver, (uid: string) =>
-      this.snapshot!.resolveUidToElement(uid)
-    );
-
     this.pages = new PageManagement(
       driver,
       () => this.core.getCurrentContextId(),
       (id: string) => this.core.setCurrentContextId(id)
     );
+
+    const currentContextId = this.core.getCurrentContextId();
+    const defaultWorkspace = this.getWorkspaceState(DEFAULT_WORKSPACE_ID);
+    defaultWorkspace.currentContextId = currentContextId;
+
+    await this.pages.refreshTabs();
+    defaultWorkspace.selectedTabIndex = this.pages.getSelectedTabIdx();
 
     // Subscribe to console and network events for ALL contexts (not just current).
     // Failures here are non-fatal: Firefox may not have the Remote Agent / BiDi
@@ -105,103 +117,105 @@ export class FirefoxClient {
   // ============================================================================
 
   async evaluate(script: string): Promise<unknown> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.evaluate(script);
+    const dom = await this.getDom();
+    return await dom.evaluate(script);
   }
 
   async getContent(): Promise<string> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.getContent();
+    const dom = await this.getDom();
+    return await dom.getContent();
   }
 
-  async extractText(options: ExtractTextOptions = {}): Promise<string> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.extractText(options);
+  async extractText(
+    options: ExtractTextOptions = {},
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<string> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.extractText(options);
   }
 
-  async clickBySelector(selector: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.clickBySelector(selector);
+  async clickBySelector(selector: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.clickBySelector(selector);
   }
 
-  async hoverBySelector(selector: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.hoverBySelector(selector);
+  async hoverBySelector(selector: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.hoverBySelector(selector);
   }
 
-  async fillBySelector(selector: string, text: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.fillBySelector(selector, text);
+  async fillBySelector(
+    selector: string,
+    text: string,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.fillBySelector(selector, text);
   }
 
-  async dragAndDropBySelectors(sourceSelector: string, targetSelector: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.dragAndDropBySelectors(sourceSelector, targetSelector);
+  async dragAndDropBySelectors(
+    sourceSelector: string,
+    targetSelector: string,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.dragAndDropBySelectors(sourceSelector, targetSelector);
   }
 
-  async uploadFileBySelector(selector: string, filePath: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.uploadFileBySelector(selector, filePath);
+  async uploadFileBySelector(
+    selector: string,
+    filePath: string,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.uploadFileBySelector(selector, filePath);
   }
 
   // UID-based input methods
 
-  async clickByUid(uid: string, dblClick = false): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.clickByUid(uid, dblClick);
+  async clickByUid(
+    uid: string,
+    dblClick = false,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.clickByUid(uid, dblClick);
   }
 
-  async hoverByUid(uid: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.hoverByUid(uid);
+  async hoverByUid(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.hoverByUid(uid);
   }
 
-  async fillByUid(uid: string, value: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.fillByUid(uid, value);
+  async fillByUid(uid: string, value: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.fillByUid(uid, value);
   }
 
-  async dragByUidToUid(fromUid: string, toUid: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.dragByUidToUid(fromUid, toUid);
+  async dragByUidToUid(
+    fromUid: string,
+    toUid: string,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.dragByUidToUid(fromUid, toUid);
   }
 
-  async fillFormByUid(elements: Array<{ uid: string; value: string }>): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.fillFormByUid(elements);
+  async fillFormByUid(
+    elements: Array<{ uid: string; value: string }>,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.fillFormByUid(elements);
   }
 
-  async uploadFileByUid(uid: string, filePath: string): Promise<void> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.uploadFileByUid(uid, filePath);
+  async uploadFileByUid(
+    uid: string,
+    filePath: string,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.uploadFileByUid(uid, filePath);
   }
 
   // ============================================================================
@@ -230,47 +244,56 @@ export class FirefoxClient {
   // Pages / Navigation
   // ============================================================================
 
-  async navigate(url: string): Promise<void> {
+  async navigate(url: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    await this.activateWorkspace(workspaceId);
     await this.pages.navigate(url);
-    // Clear snapshot on navigation (but NOT console - users can manually clear if needed)
-    this.clearSnapshot();
+    this.getWorkspaceState(workspaceId).snapshot.clear();
   }
 
-  async navigateBack(): Promise<void> {
+  async navigateBack(workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    await this.activateWorkspace(workspaceId);
     return await this.pages.navigateBack();
   }
 
-  async navigateForward(): Promise<void> {
+  async navigateForward(workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    await this.activateWorkspace(workspaceId);
     return await this.pages.navigateForward();
   }
 
-  async setViewportSize(width: number, height: number): Promise<void> {
+  async setViewportSize(
+    width: number,
+    height: number,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    await this.activateWorkspace(workspaceId);
     return await this.pages.setViewportSize(width, height);
   }
 
-  async acceptDialog(promptText?: string): Promise<void> {
+  async acceptDialog(promptText?: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    await this.activateWorkspace(workspaceId);
     return await this.pages.acceptDialog(promptText);
   }
 
-  async dismissDialog(): Promise<void> {
+  async dismissDialog(workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    await this.activateWorkspace(workspaceId);
     return await this.pages.dismissDialog();
   }
 
@@ -281,11 +304,11 @@ export class FirefoxClient {
     return this.pages.getTabs();
   }
 
-  getSelectedTabIdx(): number {
+  getSelectedTabIdx(workspaceId = DEFAULT_WORKSPACE_ID): number {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    return this.pages.getSelectedTabIdx();
+    return this.getWorkspaceState(workspaceId).selectedTabIndex;
   }
 
   async refreshTabs(): Promise<void> {
@@ -295,25 +318,42 @@ export class FirefoxClient {
     return await this.pages.refreshTabs();
   }
 
-  async selectTab(index: number): Promise<void> {
+  async selectTab(index: number, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    return await this.pages.selectTab(index);
+    await this.pages.selectTab(index);
+    const workspace = this.getWorkspaceState(workspaceId);
+    workspace.selectedTabIndex = index;
+    workspace.currentContextId = this.core.getCurrentContextId();
   }
 
-  async createNewPage(url: string): Promise<number> {
+  async createNewPage(url: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<number> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    return await this.pages.createNewPage(url);
+    const newIdx = await this.pages.createNewPage(url);
+    const workspace = this.getWorkspaceState(workspaceId);
+    workspace.selectedTabIndex = newIdx;
+    workspace.currentContextId = this.core.getCurrentContextId();
+    workspace.snapshot.clear();
+    return newIdx;
   }
 
-  async closeTab(index: number): Promise<void> {
+  async closeTab(index: number, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    return await this.pages.closeTab(index);
+    await this.activateWorkspace(workspaceId);
+    await this.pages.closeTab(index);
+    await this.pages.refreshTabs();
+
+    const workspace = this.getWorkspaceState(workspaceId);
+    const tabs = this.pages.getTabs();
+    workspace.selectedTabIndex =
+      tabs.length === 0 ? 0 : Math.min(workspace.selectedTabIndex, tabs.length - 1);
+    workspace.currentContextId = this.core.getCurrentContextId();
+    workspace.snapshot.clear();
   }
 
   // ============================================================================
@@ -360,50 +400,40 @@ export class FirefoxClient {
   // Snapshot
   // ============================================================================
 
-  async takeSnapshot(options?: SnapshotOptions): Promise<Snapshot> {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    return await this.snapshot.takeSnapshot(options);
+  async takeSnapshot(
+    options?: SnapshotOptions,
+    workspaceId = DEFAULT_WORKSPACE_ID
+  ): Promise<Snapshot> {
+    const workspace = this.getWorkspaceState(workspaceId);
+    await this.activateWorkspace(workspaceId);
+    return await workspace.snapshot.takeSnapshot(options);
   }
 
-  resolveUidToSelector(uid: string): string {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    return this.snapshot.resolveUidToSelector(uid);
+  resolveUidToSelector(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): string {
+    return this.getWorkspaceState(workspaceId).snapshot.resolveUidToSelector(uid);
   }
 
-  async resolveUidToElement(uid: string): Promise<WebElement> {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    return await this.snapshot.resolveUidToElement(uid);
+  async resolveUidToElement(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<WebElement> {
+    await this.activateWorkspace(workspaceId);
+    return await this.getWorkspaceState(workspaceId).snapshot.resolveUidToElement(uid);
   }
 
-  clearSnapshot(): void {
-    if (!this.snapshot) {
-      throw new Error('Not connected');
-    }
-    this.snapshot.clear();
+  clearSnapshot(workspaceId = DEFAULT_WORKSPACE_ID): void {
+    this.getWorkspaceState(workspaceId).snapshot.clear();
   }
 
   // ============================================================================
   // Screenshot
   // ============================================================================
 
-  async takeScreenshotPage(): Promise<string> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.takeScreenshotPage();
+  async takeScreenshotPage(workspaceId = DEFAULT_WORKSPACE_ID): Promise<string> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.takeScreenshotPage();
   }
 
-  async takeScreenshotByUid(uid: string): Promise<string> {
-    if (!this.dom) {
-      throw new Error('Not connected');
-    }
-    return await this.dom.takeScreenshotByUid(uid);
+  async takeScreenshotByUid(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<string> {
+    const dom = await this.getDom(workspaceId);
+    return await dom.takeScreenshotByUid(uid);
   }
 
   // ============================================================================
@@ -430,16 +460,20 @@ export class FirefoxClient {
    * Get current browsing context ID (for advanced operations)
    * @internal
    */
-  getCurrentContextId(): string | null {
-    return this.core.getCurrentContextId();
+  getCurrentContextId(workspaceId = DEFAULT_WORKSPACE_ID): string | null {
+    return this.getWorkspaceState(workspaceId).currentContextId;
   }
 
   /**
    * Update current browsing context ID
    * @internal
    */
-  setCurrentContextId(contextId: string): void {
-    this.core.setCurrentContextId(contextId);
+  setCurrentContextId(contextId: string, workspaceId = DEFAULT_WORKSPACE_ID): void {
+    const workspace = this.getWorkspaceState(workspaceId);
+    workspace.currentContextId = contextId;
+    if (workspaceId === DEFAULT_WORKSPACE_ID) {
+      this.core.setCurrentContextId(contextId);
+    }
   }
 
   /**
@@ -471,9 +505,8 @@ export class FirefoxClient {
     this.core.reset();
     this.consoleEvents = null;
     this.networkEvents = null;
-    this.dom = null;
     this.pages = null;
-    this.snapshot = null;
+    this.workspaces.clear();
   }
 
   // ============================================================================
@@ -482,6 +515,66 @@ export class FirefoxClient {
 
   async close(): Promise<void> {
     await this.core.close();
+  }
+
+  private getWorkspaceState(workspaceId = DEFAULT_WORKSPACE_ID): WorkspaceState {
+    const existing = this.workspaces.get(workspaceId);
+    if (existing) {
+      return existing;
+    }
+
+    const driver = this.core.getDriver();
+    const workspace: WorkspaceState = {
+      selectedTabIndex: this.workspaces.get(DEFAULT_WORKSPACE_ID)?.selectedTabIndex ?? 0,
+      currentContextId: this.workspaces.get(DEFAULT_WORKSPACE_ID)?.currentContextId ?? null,
+      snapshot: new SnapshotManager(driver),
+    };
+    this.workspaces.set(workspaceId, workspace);
+    return workspace;
+  }
+
+  private async activateWorkspace(workspaceId = DEFAULT_WORKSPACE_ID): Promise<WorkspaceState> {
+    if (!this.pages) {
+      throw new Error('Not connected');
+    }
+
+    const workspace = this.getWorkspaceState(workspaceId);
+    await this.pages.refreshTabs();
+    const tabs = this.pages.getTabs();
+
+    if (tabs.length === 0) {
+      workspace.selectedTabIndex = 0;
+      workspace.currentContextId = null;
+      return workspace;
+    }
+
+    const existingTabIndex = workspace.currentContextId
+      ? tabs.findIndex((tab) => tab.actor === workspace.currentContextId)
+      : -1;
+
+    if (existingTabIndex >= 0) {
+      workspace.selectedTabIndex = existingTabIndex;
+    } else {
+      const clampedIndex = Math.min(Math.max(workspace.selectedTabIndex, 0), tabs.length - 1);
+      workspace.selectedTabIndex = clampedIndex;
+      workspace.currentContextId = tabs[clampedIndex]?.actor ?? null;
+    }
+
+    const currentContextId = this.core.getCurrentContextId();
+    const targetContextId = tabs[workspace.selectedTabIndex]?.actor ?? null;
+    if (targetContextId && currentContextId !== targetContextId) {
+      await this.pages.selectTab(workspace.selectedTabIndex);
+    }
+
+    workspace.currentContextId = this.core.getCurrentContextId();
+    return workspace;
+  }
+
+  private async getDom(workspaceId = DEFAULT_WORKSPACE_ID): Promise<DomInteractions> {
+    await this.activateWorkspace(workspaceId);
+    return new DomInteractions(this.core.getDriver(), (uid: string) =>
+      this.getWorkspaceState(workspaceId).snapshot.resolveUidToElement(uid)
+    );
   }
 }
 

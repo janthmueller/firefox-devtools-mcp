@@ -5,13 +5,20 @@
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
 import type { McpToolResponse } from '../types/common.js';
 
+const WORKSPACE_ID_SCHEMA = {
+  type: 'string',
+  description: 'Workspace identifier. Defaults to the human workspace when omitted.',
+} as const;
+
 // Tool definitions
 export const listPagesTool = {
   name: 'list_pages',
   description: 'List open tabs (index, title, URL). Selected tab is marked.',
   inputSchema: {
     type: 'object',
-    properties: {},
+    properties: {
+      workspaceId: WORKSPACE_ID_SCHEMA,
+    },
   },
 };
 
@@ -25,6 +32,7 @@ export const newPageTool = {
         type: 'string',
         description: 'Target URL',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['url'],
   },
@@ -40,6 +48,7 @@ export const navigatePageTool = {
         type: 'string',
         description: 'Target URL',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['url'],
   },
@@ -63,6 +72,7 @@ export const selectPageTool = {
         type: 'string',
         description: 'Title substring (case-insensitive)',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: [],
   },
@@ -78,6 +88,7 @@ export const closePageTool = {
         type: 'number',
         description: 'Tab index to close',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['pageIdx'],
   },
@@ -106,12 +117,13 @@ function formatPageList(
 // Handlers
 export async function handleListPages(_args: unknown): Promise<McpToolResponse> {
   try {
+    const { workspaceId } = (_args ?? {}) as { workspaceId?: string };
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
     await firefox.refreshTabs();
     const tabs = firefox.getTabs();
-    const selectedIdx = firefox.getSelectedTabIdx();
+    const selectedIdx = firefox.getSelectedTabIdx(workspaceId);
 
     return successResponse(formatPageList(tabs, selectedIdx));
   } catch (error) {
@@ -121,7 +133,7 @@ export async function handleListPages(_args: unknown): Promise<McpToolResponse> 
 
 export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { url } = args as { url: string };
+    const { url, workspaceId } = args as { url: string; workspaceId?: string };
 
     if (!url || typeof url !== 'string') {
       throw new Error('url parameter is required and must be a string');
@@ -130,7 +142,7 @@ export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    const newIdx = await firefox.createNewPage(url);
+    const newIdx = await firefox.createNewPage(url, workspaceId);
 
     return successResponse(`✅ new page [${newIdx}] → ${url}`);
   } catch (error) {
@@ -140,7 +152,7 @@ export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
 
 export async function handleNavigatePage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { url } = args as { url: string };
+    const { url, workspaceId } = args as { url: string; workspaceId?: string };
 
     if (!url || typeof url !== 'string') {
       throw new Error('url parameter is required and must be a string');
@@ -152,14 +164,14 @@ export async function handleNavigatePage(args: unknown): Promise<McpToolResponse
     // Refresh tabs to get latest list
     await firefox.refreshTabs();
     const tabs = firefox.getTabs();
-    const selectedIdx = firefox.getSelectedTabIdx();
+    const selectedIdx = firefox.getSelectedTabIdx(workspaceId);
     const page = tabs[selectedIdx];
 
     if (!page) {
       throw new Error('No page selected');
     }
 
-    await firefox.navigate(url);
+    await firefox.navigate(url, workspaceId);
 
     return successResponse(`✅ [${selectedIdx}] → ${url}`);
   } catch (error) {
@@ -169,7 +181,12 @@ export async function handleNavigatePage(args: unknown): Promise<McpToolResponse
 
 export async function handleSelectPage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { pageIdx, url, title } = args as { pageIdx?: number; url?: string; title?: string };
+    const { pageIdx, url, title, workspaceId } = args as {
+      pageIdx?: number;
+      url?: string;
+      title?: string;
+      workspaceId?: string;
+    };
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
@@ -211,7 +228,7 @@ export async function handleSelectPage(args: unknown): Promise<McpToolResponse> 
     }
 
     // Select the tab
-    await firefox.selectTab(selectedIdx);
+    await firefox.selectTab(selectedIdx, workspaceId);
 
     return successResponse(`✅ selected [${selectedIdx}]`);
   } catch (error) {
@@ -221,7 +238,7 @@ export async function handleSelectPage(args: unknown): Promise<McpToolResponse> 
 
 export async function handleClosePage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { pageIdx } = args as { pageIdx: number };
+    const { pageIdx, workspaceId } = args as { pageIdx: number; workspaceId?: string };
 
     if (typeof pageIdx !== 'number') {
       throw new Error('pageIdx parameter is required and must be a number');
@@ -239,7 +256,7 @@ export async function handleClosePage(args: unknown): Promise<McpToolResponse> {
       throw new Error(`Page with index ${pageIdx} not found`);
     }
 
-    await firefox.closeTab(pageIdx);
+    await firefox.closeTab(pageIdx, workspaceId);
 
     return successResponse(`✅ closed [${pageIdx}]`);
   } catch (error) {

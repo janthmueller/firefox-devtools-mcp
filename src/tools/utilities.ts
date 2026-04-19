@@ -5,6 +5,11 @@
 import { successResponse, errorResponse } from '../utils/response-helpers.js';
 import type { McpToolResponse } from '../types/common.js';
 
+const WORKSPACE_ID_SCHEMA = {
+  type: 'string',
+  description: 'Workspace identifier. Defaults to the human workspace when omitted.',
+} as const;
+
 // Tool definitions - Dialogs
 export const acceptDialogTool = {
   name: 'accept_dialog',
@@ -16,6 +21,7 @@ export const acceptDialogTool = {
         type: 'string',
         description: 'Text for prompt dialogs',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
   },
 };
@@ -25,7 +31,9 @@ export const dismissDialogTool = {
   description: 'Dismiss browser dialog.',
   inputSchema: {
     type: 'object',
-    properties: {},
+    properties: {
+      workspaceId: WORKSPACE_ID_SCHEMA,
+    },
   },
 };
 
@@ -41,6 +49,7 @@ export const navigateHistoryTool = {
         enum: ['back', 'forward'],
         description: 'back or forward',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['direction'],
   },
@@ -61,6 +70,7 @@ export const setViewportSizeTool = {
         type: 'number',
         description: 'Height in pixels',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['width', 'height'],
   },
@@ -69,13 +79,14 @@ export const setViewportSizeTool = {
 // Handlers - Dialogs
 export async function handleAcceptDialog(args: unknown): Promise<McpToolResponse> {
   try {
-    const { promptText } = (args as { promptText?: string }) || {};
+    const { promptText, workspaceId } =
+      (args as { promptText?: string; workspaceId?: string }) || {};
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
     try {
-      await firefox.acceptDialog(promptText);
+      await firefox.acceptDialog(promptText, workspaceId);
       return successResponse(promptText ? `✅ Accepted: "${promptText}"` : '✅ Accepted');
     } catch (error) {
       const errorMsg = (error as Error).message;
@@ -94,11 +105,12 @@ export async function handleAcceptDialog(args: unknown): Promise<McpToolResponse
 
 export async function handleDismissDialog(_args: unknown): Promise<McpToolResponse> {
   try {
+    const { workspaceId } = (_args as { workspaceId?: string }) || {};
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
     try {
-      await firefox.dismissDialog();
+      await firefox.dismissDialog(workspaceId);
       return successResponse('✅ Dismissed');
     } catch (error) {
       const errorMsg = (error as Error).message;
@@ -118,7 +130,10 @@ export async function handleDismissDialog(_args: unknown): Promise<McpToolRespon
 // Handlers - History
 export async function handleNavigateHistory(args: unknown): Promise<McpToolResponse> {
   try {
-    const { direction } = args as { direction: 'back' | 'forward' };
+    const { direction, workspaceId } = args as {
+      direction: 'back' | 'forward';
+      workspaceId?: string;
+    };
 
     if (!direction || (direction !== 'back' && direction !== 'forward')) {
       throw new Error('direction parameter is required and must be "back" or "forward"');
@@ -128,9 +143,9 @@ export async function handleNavigateHistory(args: unknown): Promise<McpToolRespo
     const firefox = await getFirefox();
 
     if (direction === 'back') {
-      await firefox.navigateBack();
+      await firefox.navigateBack(workspaceId);
     } else {
-      await firefox.navigateForward();
+      await firefox.navigateForward(workspaceId);
     }
 
     return successResponse(`✅ ${direction}`);
@@ -142,7 +157,11 @@ export async function handleNavigateHistory(args: unknown): Promise<McpToolRespo
 // Handlers - Viewport
 export async function handleSetViewportSize(args: unknown): Promise<McpToolResponse> {
   try {
-    const { width, height } = args as { width: number; height: number };
+    const { width, height, workspaceId } = args as {
+      width: number;
+      height: number;
+      workspaceId?: string;
+    };
 
     if (typeof width !== 'number' || width <= 0) {
       throw new Error('width parameter is required and must be a positive number');
@@ -155,7 +174,7 @@ export async function handleSetViewportSize(args: unknown): Promise<McpToolRespo
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    await firefox.setViewportSize(width, height);
+    await firefox.setViewportSize(width, height, workspaceId);
 
     return successResponse(`✅ ${width}x${height}`);
   } catch (error) {

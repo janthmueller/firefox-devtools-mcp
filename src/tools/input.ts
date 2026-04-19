@@ -7,6 +7,11 @@ import { successResponse, errorResponse } from '../utils/response-helpers.js';
 import { handleUidError } from '../utils/uid-helpers.js';
 import type { McpToolResponse } from '../types/common.js';
 
+const WORKSPACE_ID_SCHEMA = {
+  type: 'string',
+  description: 'Workspace identifier. Defaults to the human workspace when omitted.',
+} as const;
+
 // Tool definitions
 export const clickByUidTool = {
   name: 'click_by_uid',
@@ -22,6 +27,7 @@ export const clickByUidTool = {
         type: 'boolean',
         description: 'Double-click (default: false)',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['uid'],
   },
@@ -37,6 +43,7 @@ export const hoverByUidTool = {
         type: 'string',
         description: 'Element UID from snapshot',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['uid'],
   },
@@ -56,6 +63,7 @@ export const fillByUidTool = {
         type: 'string',
         description: 'Text to fill',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['uid', 'value'],
   },
@@ -75,6 +83,7 @@ export const dragByUidToUidTool = {
         type: 'string',
         description: 'Target element UID',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['fromUid', 'toUid'],
   },
@@ -104,6 +113,7 @@ export const fillFormByUidTool = {
           required: ['uid', 'value'],
         },
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['elements'],
   },
@@ -123,6 +133,7 @@ export const uploadFileByUidTool = {
         type: 'string',
         description: 'Local file path',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['uid', 'filePath'],
   },
@@ -131,7 +142,11 @@ export const uploadFileByUidTool = {
 // Handlers
 export async function handleClickByUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { uid, dblClick } = args as { uid: string; dblClick?: boolean };
+    const { uid, dblClick, workspaceId } = args as {
+      uid: string;
+      dblClick?: boolean;
+      workspaceId?: string;
+    };
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid parameter is required and must be a string');
@@ -141,7 +156,7 @@ export async function handleClickByUid(args: unknown): Promise<McpToolResponse> 
     const firefox = await getFirefox();
 
     try {
-      await firefox.clickByUid(uid, dblClick);
+      await firefox.clickByUid(uid, dblClick, workspaceId);
       return successResponse(`✅ ${dblClick ? 'dblclick' : 'click'} ${uid}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
@@ -153,7 +168,7 @@ export async function handleClickByUid(args: unknown): Promise<McpToolResponse> 
 
 export async function handleHoverByUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { uid } = args as { uid: string };
+    const { uid, workspaceId } = args as { uid: string; workspaceId?: string };
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid parameter is required and must be a string');
@@ -163,7 +178,7 @@ export async function handleHoverByUid(args: unknown): Promise<McpToolResponse> 
     const firefox = await getFirefox();
 
     try {
-      await firefox.hoverByUid(uid);
+      await firefox.hoverByUid(uid, workspaceId);
       return successResponse(`✅ hover ${uid}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
@@ -175,7 +190,11 @@ export async function handleHoverByUid(args: unknown): Promise<McpToolResponse> 
 
 export async function handleFillByUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { uid, value } = args as { uid: string; value: string };
+    const { uid, value, workspaceId } = args as {
+      uid: string;
+      value: string;
+      workspaceId?: string;
+    };
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid parameter is required and must be a string');
@@ -189,7 +208,7 @@ export async function handleFillByUid(args: unknown): Promise<McpToolResponse> {
     const firefox = await getFirefox();
 
     try {
-      await firefox.fillByUid(uid, value);
+      await firefox.fillByUid(uid, value, workspaceId);
       return successResponse(`✅ fill ${uid}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
@@ -201,7 +220,11 @@ export async function handleFillByUid(args: unknown): Promise<McpToolResponse> {
 
 export async function handleDragByUidToUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { fromUid, toUid } = args as { fromUid: string; toUid: string };
+    const { fromUid, toUid, workspaceId } = args as {
+      fromUid: string;
+      toUid: string;
+      workspaceId?: string;
+    };
 
     if (!fromUid || typeof fromUid !== 'string') {
       throw new Error('fromUid parameter is required and must be a string');
@@ -215,7 +238,7 @@ export async function handleDragByUidToUid(args: unknown): Promise<McpToolRespon
     const firefox = await getFirefox();
 
     try {
-      await firefox.dragByUidToUid(fromUid, toUid);
+      await firefox.dragByUidToUid(fromUid, toUid, workspaceId);
       return successResponse(`✅ drag ${fromUid}→${toUid}`);
     } catch (error) {
       // Check both UIDs for staleness
@@ -232,7 +255,10 @@ export async function handleDragByUidToUid(args: unknown): Promise<McpToolRespon
 
 export async function handleFillFormByUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { elements } = args as { elements: Array<{ uid: string; value: string }> };
+    const { elements, workspaceId } = args as {
+      elements: Array<{ uid: string; value: string }>;
+      workspaceId?: string;
+    };
 
     if (!elements || !Array.isArray(elements) || elements.length === 0) {
       throw new Error('elements parameter is required and must be a non-empty array');
@@ -252,7 +278,7 @@ export async function handleFillFormByUid(args: unknown): Promise<McpToolRespons
     const firefox = await getFirefox();
 
     try {
-      await firefox.fillFormByUid(elements);
+      await firefox.fillFormByUid(elements, workspaceId);
       return successResponse(`✅ filled ${elements.length} fields`);
     } catch (error) {
       const errorMsg = (error as Error).message;
@@ -268,7 +294,11 @@ export async function handleFillFormByUid(args: unknown): Promise<McpToolRespons
 
 export async function handleUploadFileByUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { uid, filePath } = args as { uid: string; filePath: string };
+    const { uid, filePath, workspaceId } = args as {
+      uid: string;
+      filePath: string;
+      workspaceId?: string;
+    };
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid parameter is required and must be a string');
@@ -282,7 +312,7 @@ export async function handleUploadFileByUid(args: unknown): Promise<McpToolRespo
     const firefox = await getFirefox();
 
     try {
-      await firefox.uploadFileByUid(uid, filePath);
+      await firefox.uploadFileByUid(uid, filePath, workspaceId);
       return successResponse(`✅ upload ${uid}`);
     } catch (error) {
       const errorMsg = (error as Error).message;

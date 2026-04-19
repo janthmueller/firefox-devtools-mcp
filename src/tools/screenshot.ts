@@ -13,6 +13,10 @@ const SAVE_TO_SCHEMA = {
   description:
     'Optional file path to save the screenshot to instead of returning it as image data in the response.',
 } as const;
+const WORKSPACE_ID_SCHEMA = {
+  type: 'string',
+  description: 'Workspace identifier. Defaults to the human workspace when omitted.',
+} as const;
 
 // Tool definitions
 export const screenshotPageTool = {
@@ -22,6 +26,7 @@ export const screenshotPageTool = {
     type: 'object',
     properties: {
       saveTo: SAVE_TO_SCHEMA,
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
   },
 };
@@ -37,6 +42,7 @@ export const screenshotByUidTool = {
         description: 'Element UID from snapshot',
       },
       saveTo: SAVE_TO_SCHEMA,
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['uid'],
   },
@@ -74,12 +80,12 @@ function imageResponse(base64Png: string): McpToolResponse {
 // Handlers
 export async function handleScreenshotPage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { saveTo } = (args ?? {}) as { saveTo?: string };
+    const { saveTo, workspaceId } = (args ?? {}) as { saveTo?: string; workspaceId?: string };
 
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    const base64Png = await firefox.takeScreenshotPage();
+    const base64Png = await firefox.takeScreenshotPage(workspaceId);
 
     if (!base64Png || typeof base64Png !== 'string') {
       throw new Error('Invalid screenshot data');
@@ -97,7 +103,11 @@ export async function handleScreenshotPage(args: unknown): Promise<McpToolRespon
 
 export async function handleScreenshotByUid(args: unknown): Promise<McpToolResponse> {
   try {
-    const { uid, saveTo } = args as { uid: string; saveTo?: string };
+    const { uid, saveTo, workspaceId } = args as {
+      uid: string;
+      saveTo?: string;
+      workspaceId?: string;
+    };
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid required');
@@ -107,7 +117,7 @@ export async function handleScreenshotByUid(args: unknown): Promise<McpToolRespo
     const firefox = await getFirefox();
 
     try {
-      const base64Png = await firefox.takeScreenshotByUid(uid);
+      const base64Png = await firefox.takeScreenshotByUid(uid, workspaceId);
 
       if (!base64Png || typeof base64Png !== 'string') {
         throw new Error('Invalid screenshot data');

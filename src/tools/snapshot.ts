@@ -7,6 +7,10 @@ import { handleUidError } from '../utils/uid-helpers.js';
 import type { McpToolResponse } from '../types/common.js';
 
 const DEFAULT_SNAPSHOT_LINES = 100;
+const WORKSPACE_ID_SCHEMA = {
+  type: 'string',
+  description: 'Workspace identifier. Defaults to the human workspace when omitted.',
+} as const;
 
 // Tool definitions
 export const takeSnapshotTool = {
@@ -46,6 +50,7 @@ export const takeSnapshotTool = {
         description:
           'Optional UID to use as the subtree root. Omit to create a fresh document-root snapshot that replaces the current UID map. When provided, maxDepth becomes relative to this root and the current snapshot UID space is reused. After navigation, old UIDs become stale and a fresh root snapshot is required.',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
       collectorMaxTextLength: {
         anyOf: [{ type: 'number' }, { type: 'null' }],
         description:
@@ -70,6 +75,7 @@ export const resolveUidToSelectorTool = {
         type: 'string',
         description: 'UID from snapshot',
       },
+      workspaceId: WORKSPACE_ID_SCHEMA,
     },
     required: ['uid'],
   },
@@ -80,7 +86,9 @@ export const clearSnapshotTool = {
   description: 'Clear snapshot cache. Usually not needed.',
   inputSchema: {
     type: 'object',
-    properties: {},
+    properties: {
+      workspaceId: WORKSPACE_ID_SCHEMA,
+    },
   },
 };
 
@@ -95,6 +103,7 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       includeAll = false,
       selector,
       uid,
+      workspaceId,
       collectorMaxTextLength,
       formatterMaxTextLength,
     } = (args as {
@@ -105,6 +114,7 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       includeAll?: boolean;
       selector?: string;
       uid?: string;
+      workspaceId?: string;
       collectorMaxTextLength?: number | null;
       formatterMaxTextLength?: number | null;
     }) || {};
@@ -140,7 +150,8 @@ export async function handleTakeSnapshot(args: unknown): Promise<McpToolResponse
       snapshotOptions.formatterMaxTextLength = formatterMaxTextLength;
     }
     const snapshot = await firefox.takeSnapshot(
-      Object.keys(snapshotOptions).length > 0 ? snapshotOptions : undefined
+      Object.keys(snapshotOptions).length > 0 ? snapshotOptions : undefined,
+      workspaceId
     );
 
     // Import formatter to apply custom options
@@ -214,7 +225,7 @@ function validateTextLengthControl(
 
 export async function handleResolveUidToSelector(args: unknown): Promise<McpToolResponse> {
   try {
-    const { uid } = args as { uid: string };
+    const { uid, workspaceId } = args as { uid: string; workspaceId?: string };
 
     if (!uid || typeof uid !== 'string') {
       throw new Error('uid parameter is required and must be a string');
@@ -224,7 +235,7 @@ export async function handleResolveUidToSelector(args: unknown): Promise<McpTool
     const firefox = await getFirefox();
 
     try {
-      const selector = firefox.resolveUidToSelector(uid);
+      const selector = firefox.resolveUidToSelector(uid, workspaceId);
       return successResponse(`${uid} → ${selector}`);
     } catch (error) {
       throw handleUidError(error as Error, uid);
@@ -236,10 +247,11 @@ export async function handleResolveUidToSelector(args: unknown): Promise<McpTool
 
 export async function handleClearSnapshot(_args: unknown): Promise<McpToolResponse> {
   try {
+    const { workspaceId } = (_args ?? {}) as { workspaceId?: string };
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    firefox.clearSnapshot();
+    firefox.clearSnapshot(workspaceId);
 
     return successResponse('🧹 Snapshot cleared');
   } catch (error) {
