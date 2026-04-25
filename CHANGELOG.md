@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/janthmueller/firewatch-mcp/compare/v1.4.0...v1.5.0) (2026-04-25)
+
+
+### Features
+
+* add workspace ownership metadata ([06c2cdc](https://github.com/janthmueller/firewatch-mcp/commit/06c2cdcb712bfd79e8b818ce7b91cf0b2cdedc5d))
+
 # [1.4.0](https://github.com/janthmueller/firewatch-mcp/compare/v1.3.1...v1.4.0) (2026-04-19)
 
 
