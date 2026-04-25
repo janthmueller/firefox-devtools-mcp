@@ -12,11 +12,30 @@ import { PageManagement } from './pages.js';
 import { SnapshotManager, type Snapshot, type SnapshotOptions } from './snapshot/index.js';
 
 const DEFAULT_WORKSPACE_ID = 'human';
+const DEFAULT_CALLER_ID = 'human';
+
+type TabOwnership = 'shared' | 'human-owned' | 'agent-owned';
 
 interface WorkspaceState {
   selectedTabIndex: number;
   currentContextId: string | null;
   snapshot: SnapshotManager;
+}
+
+interface TabState {
+  tabId: string;
+  contextId: string;
+  ownership: TabOwnership;
+  ownerWorkspaceId: string | null;
+}
+
+interface BrowserTab {
+  actor: string;
+  title: string;
+  url: string;
+  tabId: string;
+  ownership: TabOwnership;
+  ownerWorkspaceId: string | null;
 }
 
 /**
@@ -29,6 +48,8 @@ export class FirefoxClient {
   private networkEvents: NetworkEvents | null = null;
   private pages: PageManagement | null = null;
   private workspaces = new Map<string, WorkspaceState>();
+  private tabs = new Map<string, TabState>();
+  private nextTabIdCounter = 1;
 
   constructor(options: FirefoxLaunchOptions) {
     this.core = new FirefoxCore(options);
@@ -87,6 +108,7 @@ export class FirefoxClient {
     defaultWorkspace.currentContextId = currentContextId;
 
     await this.pages.refreshTabs();
+    this.syncTabState();
     defaultWorkspace.selectedTabIndex = this.pages.getSelectedTabIdx();
 
     // Subscribe to console and network events for ALL contexts (not just current).
@@ -128,46 +150,58 @@ export class FirefoxClient {
 
   async extractText(
     options: ExtractTextOptions = {},
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<string> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.extractText(options);
   }
 
-  async clickBySelector(selector: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+  async clickBySelector(
+    selector: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.clickBySelector(selector);
   }
 
-  async hoverBySelector(selector: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+  async hoverBySelector(
+    selector: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.hoverBySelector(selector);
   }
 
   async fillBySelector(
     selector: string,
     text: string,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.fillBySelector(selector, text);
   }
 
   async dragAndDropBySelectors(
     sourceSelector: string,
     targetSelector: string,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.dragAndDropBySelectors(sourceSelector, targetSelector);
   }
 
   async uploadFileBySelector(
     selector: string,
     filePath: string,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.uploadFileBySelector(selector, filePath);
   }
 
@@ -176,45 +210,58 @@ export class FirefoxClient {
   async clickByUid(
     uid: string,
     dblClick = false,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.clickByUid(uid, dblClick);
   }
 
-  async hoverByUid(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+  async hoverByUid(
+    uid: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.hoverByUid(uid);
   }
 
-  async fillByUid(uid: string, value: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+  async fillByUid(
+    uid: string,
+    value: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.fillByUid(uid, value);
   }
 
   async dragByUidToUid(
     fromUid: string,
     toUid: string,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.dragByUidToUid(fromUid, toUid);
   }
 
   async fillFormByUid(
     elements: Array<{ uid: string; value: string }>,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.fillFormByUid(elements);
   }
 
   async uploadFileByUid(
     uid: string,
     filePath: string,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
-    const dom = await this.getDom(workspaceId);
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.uploadFileByUid(uid, filePath);
   }
 
@@ -244,64 +291,90 @@ export class FirefoxClient {
   // Pages / Navigation
   // ============================================================================
 
-  async navigate(url: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async navigate(
+    url: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     await this.pages.navigate(url);
     this.getWorkspaceState(workspaceId).snapshot.clear();
   }
 
-  async navigateBack(workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async navigateBack(
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     return await this.pages.navigateBack();
   }
 
-  async navigateForward(workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async navigateForward(
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     return await this.pages.navigateForward();
   }
 
   async setViewportSize(
     width: number,
     height: number,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     return await this.pages.setViewportSize(width, height);
   }
 
-  async acceptDialog(promptText?: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async acceptDialog(
+    promptText?: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     return await this.pages.acceptDialog(promptText);
   }
 
-  async dismissDialog(workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async dismissDialog(
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     return await this.pages.dismissDialog();
   }
 
-  getTabs(): Array<{ actor: string; title: string; url: string }> {
+  getTabs(): BrowserTab[] {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    return this.pages.getTabs();
+    return this.pages.getTabs().map((tab) => {
+      const tabState = this.tabs.get(tab.actor);
+      return {
+        ...tab,
+        tabId: tabState?.tabId ?? this.buildEphemeralTabId(tab.actor),
+        ownership: tabState?.ownership ?? 'shared',
+        ownerWorkspaceId: tabState?.ownerWorkspaceId ?? null,
+      };
+    });
   }
 
   getSelectedTabIdx(workspaceId = DEFAULT_WORKSPACE_ID): number {
@@ -315,43 +388,64 @@ export class FirefoxClient {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    return await this.pages.refreshTabs();
+    await this.pages.refreshTabs();
+    this.syncTabState();
+    this.reconcileWorkspaceSelections();
   }
 
-  async selectTab(index: number, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async selectTab(
+    index: number,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    this.assertWorkspaceAccess(workspaceId, callerId);
     await this.pages.selectTab(index);
+    this.syncTabState();
+    this.reconcileWorkspaceSelections();
     const workspace = this.getWorkspaceState(workspaceId);
     workspace.selectedTabIndex = index;
     workspace.currentContextId = this.core.getCurrentContextId();
   }
 
-  async createNewPage(url: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<number> {
+  async createNewPage(
+    url: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<number> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
+    this.assertWorkspaceAccess(workspaceId, callerId);
     const newIdx = await this.pages.createNewPage(url);
+    await this.pages.refreshTabs();
+    this.syncTabState();
+    this.reconcileWorkspaceSelections();
     const workspace = this.getWorkspaceState(workspaceId);
     workspace.selectedTabIndex = newIdx;
     workspace.currentContextId = this.core.getCurrentContextId();
+    this.assignTabOwnership(workspace.currentContextId, workspaceId);
     workspace.snapshot.clear();
     return newIdx;
   }
 
-  async closeTab(index: number, workspaceId = DEFAULT_WORKSPACE_ID): Promise<void> {
+  async closeTab(
+    index: number,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<void> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     await this.pages.closeTab(index);
     await this.pages.refreshTabs();
+    this.syncTabState();
+    this.reconcileWorkspaceSelections();
 
     const workspace = this.getWorkspaceState(workspaceId);
-    const tabs = this.pages.getTabs();
-    workspace.selectedTabIndex =
-      tabs.length === 0 ? 0 : Math.min(workspace.selectedTabIndex, tabs.length - 1);
     workspace.currentContextId = this.core.getCurrentContextId();
     workspace.snapshot.clear();
   }
@@ -402,10 +496,11 @@ export class FirefoxClient {
 
   async takeSnapshot(
     options?: SnapshotOptions,
-    workspaceId = DEFAULT_WORKSPACE_ID
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
   ): Promise<Snapshot> {
     const workspace = this.getWorkspaceState(workspaceId);
-    await this.activateWorkspace(workspaceId);
+    await this.activateWorkspace(workspaceId, callerId);
     return await workspace.snapshot.takeSnapshot(options);
   }
 
@@ -413,8 +508,12 @@ export class FirefoxClient {
     return this.getWorkspaceState(workspaceId).snapshot.resolveUidToSelector(uid);
   }
 
-  async resolveUidToElement(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<WebElement> {
-    await this.activateWorkspace(workspaceId);
+  async resolveUidToElement(
+    uid: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<WebElement> {
+    await this.activateWorkspace(workspaceId, callerId);
     return await this.getWorkspaceState(workspaceId).snapshot.resolveUidToElement(uid);
   }
 
@@ -426,13 +525,20 @@ export class FirefoxClient {
   // Screenshot
   // ============================================================================
 
-  async takeScreenshotPage(workspaceId = DEFAULT_WORKSPACE_ID): Promise<string> {
-    const dom = await this.getDom(workspaceId);
+  async takeScreenshotPage(
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<string> {
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.takeScreenshotPage();
   }
 
-  async takeScreenshotByUid(uid: string, workspaceId = DEFAULT_WORKSPACE_ID): Promise<string> {
-    const dom = await this.getDom(workspaceId);
+  async takeScreenshotByUid(
+    uid: string,
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<string> {
+    const dom = await this.getDom(workspaceId, callerId);
     return await dom.takeScreenshotByUid(uid);
   }
 
@@ -507,6 +613,8 @@ export class FirefoxClient {
     this.networkEvents = null;
     this.pages = null;
     this.workspaces.clear();
+    this.tabs.clear();
+    this.nextTabIdCounter = 1;
   }
 
   // ============================================================================
@@ -533,13 +641,19 @@ export class FirefoxClient {
     return workspace;
   }
 
-  private async activateWorkspace(workspaceId = DEFAULT_WORKSPACE_ID): Promise<WorkspaceState> {
+  private async activateWorkspace(
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<WorkspaceState> {
     if (!this.pages) {
       throw new Error('Not connected');
     }
 
+    this.assertWorkspaceAccess(workspaceId, callerId);
     const workspace = this.getWorkspaceState(workspaceId);
     await this.pages.refreshTabs();
+    this.syncTabState();
+    this.reconcileWorkspaceSelections();
     const tabs = this.pages.getTabs();
 
     if (tabs.length === 0) {
@@ -570,11 +684,113 @@ export class FirefoxClient {
     return workspace;
   }
 
-  private async getDom(workspaceId = DEFAULT_WORKSPACE_ID): Promise<DomInteractions> {
-    await this.activateWorkspace(workspaceId);
+  private async getDom(
+    workspaceId = DEFAULT_WORKSPACE_ID,
+    callerId = DEFAULT_CALLER_ID
+  ): Promise<DomInteractions> {
+    await this.activateWorkspace(workspaceId, callerId);
     return new DomInteractions(this.core.getDriver(), (uid: string) =>
       this.getWorkspaceState(workspaceId).snapshot.resolveUidToElement(uid)
     );
+  }
+
+  private syncTabState(): void {
+    if (!this.pages) {
+      return;
+    }
+
+    const currentTabs = this.pages.getTabs();
+    const currentContextIds = new Set(currentTabs.map((tab) => tab.actor));
+
+    for (const tab of currentTabs) {
+      if (this.tabs.has(tab.actor)) {
+        continue;
+      }
+
+      this.tabs.set(tab.actor, {
+        tabId: `tab-${this.nextTabIdCounter++}`,
+        contextId: tab.actor,
+        ownership: 'shared',
+        ownerWorkspaceId: null,
+      });
+    }
+
+    for (const contextId of Array.from(this.tabs.keys())) {
+      if (!currentContextIds.has(contextId)) {
+        this.tabs.delete(contextId);
+      }
+    }
+  }
+
+  private assignTabOwnership(contextId: string | null, workspaceId: string): void {
+    if (!contextId) {
+      return;
+    }
+
+    const tabState = this.tabs.get(contextId);
+    if (!tabState) {
+      return;
+    }
+
+    if (workspaceId === DEFAULT_WORKSPACE_ID) {
+      tabState.ownership = 'shared';
+      tabState.ownerWorkspaceId = null;
+      return;
+    }
+
+    tabState.ownership = 'agent-owned';
+    tabState.ownerWorkspaceId = workspaceId;
+  }
+
+  private buildEphemeralTabId(contextId: string): string {
+    return `tab-unknown-${contextId}`;
+  }
+
+  private assertWorkspaceAccess(workspaceId: string, callerId: string): void {
+    if (callerId === DEFAULT_CALLER_ID) {
+      return;
+    }
+
+    if (workspaceId === DEFAULT_WORKSPACE_ID) {
+      throw new Error(
+        `Caller "${callerId}" is not allowed to act in the human workspace without explicit approval`
+      );
+    }
+
+    if (workspaceId !== callerId) {
+      throw new Error(
+        `Caller "${callerId}" is not allowed to act in workspace "${workspaceId}" by default`
+      );
+    }
+  }
+
+  private reconcileWorkspaceSelections(): void {
+    if (!this.pages) {
+      return;
+    }
+
+    const tabs = this.pages.getTabs();
+
+    for (const workspace of this.workspaces.values()) {
+      if (tabs.length === 0) {
+        workspace.selectedTabIndex = 0;
+        workspace.currentContextId = null;
+        continue;
+      }
+
+      const existingTabIndex = workspace.currentContextId
+        ? tabs.findIndex((tab) => tab.actor === workspace.currentContextId)
+        : -1;
+
+      if (existingTabIndex >= 0) {
+        workspace.selectedTabIndex = existingTabIndex;
+        continue;
+      }
+
+      const clampedIndex = Math.min(Math.max(workspace.selectedTabIndex, 0), tabs.length - 1);
+      workspace.selectedTabIndex = clampedIndex;
+      workspace.currentContextId = tabs[clampedIndex]?.actor ?? null;
+    }
   }
 }
 

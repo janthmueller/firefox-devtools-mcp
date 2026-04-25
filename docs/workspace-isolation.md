@@ -111,14 +111,17 @@ Each workspace should eventually own:
 
 Pages/tabs should have explicit ownership semantics:
 
+- `shared` (default)
 - `human-owned`
 - `agent-owned`
-- `shared`
 
 Expected rules:
 
+- `shared` should remain the default mode unless there is a reason to restrict access
 - agents should not silently take over a `human-owned` tab
-- `shared` tabs should require explicit conflict rules
+- an `agent-owned` tab should be reserved for the owning agent plus the human supervisor
+- other agents should not silently enter another agent's owned tab unless it is explicitly shared
+- `shared` tabs still need explicit conflict rules
 - the system should make handoff visible instead of implicit
 
 ### Workspace access model
@@ -140,6 +143,18 @@ Recommended baseline:
   - other agents: denied by default unless explicitly shared
 
 This keeps delegation safe while preserving human visibility and override.
+
+### Default sharing rule
+
+Ownership should be treated as an override/protection layer, not as the default state for all tabs.
+
+Recommended default:
+
+- tabs/pages start as `shared`
+- a tab becomes `human-owned` when the human explicitly protects it or when the system needs to preserve the human's active work area
+- a tab becomes `agent-owned` when an agent opens or claims it as its own work surface
+
+This preserves the collaborative browsing model while still allowing stronger boundaries where needed.
 
 ### Isolation levels
 
@@ -311,6 +326,25 @@ interface WorkspaceState {
   snapshot: SnapshotState;
 }
 ```
+
+Introduce a tab/page ownership record alongside the workspace state:
+
+```ts
+type TabOwnership = 'shared' | 'human-owned' | 'agent-owned';
+
+interface TabState {
+  tabId: string;
+  contextId: string;
+  ownership: TabOwnership;
+  ownerWorkspaceId: string | null;
+}
+```
+
+Notes:
+
+- `tabId` should be a Firewatch-stable identifier, not just the current tab index
+- `ownerWorkspaceId` should be `null` for `shared` tabs
+- `agent-owned` means the owning agent workspace is the default operator, but the human can always inspect or take over
 
 Where `SnapshotState` contains:
 
