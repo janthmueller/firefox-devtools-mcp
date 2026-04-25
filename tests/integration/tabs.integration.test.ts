@@ -174,6 +174,13 @@ describe('Tab Management Integration Tests', () => {
     expect(firefox.getSelectedTabIdx(humanWorkspaceId)).toBe(humanTabIndex);
     expect(firefox.getSelectedTabIdx(agentWorkspaceId)).toBe(agentTabIndex);
 
+    await firefox.refreshTabs();
+    const tabs = firefox.getTabs();
+    const agentTab = tabs[agentTabIndex];
+    expect(agentTab?.tabId).toBeDefined();
+    expect(agentTab?.ownership).toBe('agent-owned');
+    expect(agentTab?.ownerWorkspaceId).toBe(agentWorkspaceId);
+
     const humanSnapshot = await firefox.takeSnapshot(undefined, humanWorkspaceId);
     const humanHasClickButton = humanSnapshot.json.uidMap.some(
       (entry) => entry.css.includes('#clickBtn') || entry.css.includes('clickBtn')
@@ -217,6 +224,11 @@ describe('Tab Management Integration Tests', () => {
     const agentTabIndex = await firefox.createNewPage(formPath, agentWorkspaceId);
     await waitForPageLoad();
 
+    await firefox.refreshTabs();
+    const tabsBeforeClose = firefox.getTabs();
+    const agentTabIdBeforeClose = tabsBeforeClose[agentTabIndex]?.tabId;
+    expect(agentTabIdBeforeClose).toBeDefined();
+
     const agentSnapshotBefore = await firefox.takeSnapshot(undefined, agentWorkspaceId);
     const agentEmailElement = agentSnapshotBefore.json.uidMap.find(
       (entry) => entry.css.includes('#email') || entry.css.includes('email')
@@ -228,6 +240,13 @@ describe('Tab Management Integration Tests', () => {
 
     const agentSelectedTabIndex = firefox.getSelectedTabIdx(agentWorkspaceId);
     expect(agentSelectedTabIndex).toBeGreaterThanOrEqual(0);
+
+    await firefox.refreshTabs();
+    const tabsAfterClose = firefox.getTabs();
+    const currentAgentTab = tabsAfterClose[agentSelectedTabIndex];
+    expect(currentAgentTab?.tabId).toBe(agentTabIdBeforeClose);
+    expect(currentAgentTab?.ownership).toBe('agent-owned');
+    expect(currentAgentTab?.ownerWorkspaceId).toBe(agentWorkspaceId);
 
     const agentSnapshotAfter = await firefox.takeSnapshot(undefined, agentWorkspaceId);
     const agentStillHasEmailField = agentSnapshotAfter.json.uidMap.some(

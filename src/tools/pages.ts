@@ -9,6 +9,10 @@ const WORKSPACE_ID_SCHEMA = {
   type: 'string',
   description: 'Workspace identifier. Defaults to the human workspace when omitted.',
 } as const;
+const CALLER_ID_SCHEMA = {
+  type: 'string',
+  description: 'Caller identity. Defaults to the human caller when omitted.',
+} as const;
 
 // Tool definitions
 export const listPagesTool = {
@@ -18,6 +22,7 @@ export const listPagesTool = {
     type: 'object',
     properties: {
       workspaceId: WORKSPACE_ID_SCHEMA,
+      callerId: CALLER_ID_SCHEMA,
     },
   },
 };
@@ -33,6 +38,7 @@ export const newPageTool = {
         description: 'Target URL',
       },
       workspaceId: WORKSPACE_ID_SCHEMA,
+      callerId: CALLER_ID_SCHEMA,
     },
     required: ['url'],
   },
@@ -49,6 +55,7 @@ export const navigatePageTool = {
         description: 'Target URL',
       },
       workspaceId: WORKSPACE_ID_SCHEMA,
+      callerId: CALLER_ID_SCHEMA,
     },
     required: ['url'],
   },
@@ -73,6 +80,7 @@ export const selectPageTool = {
         description: 'Title substring (case-insensitive)',
       },
       workspaceId: WORKSPACE_ID_SCHEMA,
+      callerId: CALLER_ID_SCHEMA,
     },
     required: [],
   },
@@ -89,6 +97,7 @@ export const closePageTool = {
         description: 'Tab index to close',
       },
       workspaceId: WORKSPACE_ID_SCHEMA,
+      callerId: CALLER_ID_SCHEMA,
     },
     required: ['pageIdx'],
   },
@@ -98,7 +107,13 @@ export const closePageTool = {
  * Format page list compactly
  */
 function formatPageList(
-  tabs: Array<{ title?: string; url?: string }>,
+  tabs: Array<{
+    title?: string;
+    url?: string;
+    tabId?: string;
+    ownership?: string;
+    ownerWorkspaceId?: string | null;
+  }>,
   selectedIdx: number
 ): string {
   if (tabs.length === 0) {
@@ -109,7 +124,13 @@ function formatPageList(
     const idx = tabs.indexOf(tab);
     const marker = idx === selectedIdx ? '>' : ' ';
     const title = (tab.title || 'Untitled').substring(0, 40);
-    lines.push(`${marker}[${idx}] ${title}`);
+    const tabId = tab.tabId ? ` ${tab.tabId}` : '';
+    const ownership = tab.ownership
+      ? tab.ownerWorkspaceId
+        ? ` ${tab.ownership}:${tab.ownerWorkspaceId}`
+        : ` ${tab.ownership}`
+      : '';
+    lines.push(`${marker}[${idx}]${tabId}${ownership} ${title}`);
   }
   return lines.join('\n');
 }
@@ -133,7 +154,11 @@ export async function handleListPages(_args: unknown): Promise<McpToolResponse> 
 
 export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { url, workspaceId } = args as { url: string; workspaceId?: string };
+    const { url, workspaceId, callerId } = args as {
+      url: string;
+      workspaceId?: string;
+      callerId?: string;
+    };
 
     if (!url || typeof url !== 'string') {
       throw new Error('url parameter is required and must be a string');
@@ -142,7 +167,7 @@ export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
     const { getFirefox } = await import('../index.js');
     const firefox = await getFirefox();
 
-    const newIdx = await firefox.createNewPage(url, workspaceId);
+    const newIdx = await firefox.createNewPage(url, workspaceId, callerId);
 
     return successResponse(`✅ new page [${newIdx}] → ${url}`);
   } catch (error) {
@@ -152,7 +177,11 @@ export async function handleNewPage(args: unknown): Promise<McpToolResponse> {
 
 export async function handleNavigatePage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { url, workspaceId } = args as { url: string; workspaceId?: string };
+    const { url, workspaceId, callerId } = args as {
+      url: string;
+      workspaceId?: string;
+      callerId?: string;
+    };
 
     if (!url || typeof url !== 'string') {
       throw new Error('url parameter is required and must be a string');
@@ -171,7 +200,7 @@ export async function handleNavigatePage(args: unknown): Promise<McpToolResponse
       throw new Error('No page selected');
     }
 
-    await firefox.navigate(url, workspaceId);
+    await firefox.navigate(url, workspaceId, callerId);
 
     return successResponse(`✅ [${selectedIdx}] → ${url}`);
   } catch (error) {
@@ -181,11 +210,12 @@ export async function handleNavigatePage(args: unknown): Promise<McpToolResponse
 
 export async function handleSelectPage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { pageIdx, url, title, workspaceId } = args as {
+    const { pageIdx, url, title, workspaceId, callerId } = args as {
       pageIdx?: number;
       url?: string;
       title?: string;
       workspaceId?: string;
+      callerId?: string;
     };
 
     const { getFirefox } = await import('../index.js');
@@ -228,7 +258,7 @@ export async function handleSelectPage(args: unknown): Promise<McpToolResponse> 
     }
 
     // Select the tab
-    await firefox.selectTab(selectedIdx, workspaceId);
+    await firefox.selectTab(selectedIdx, workspaceId, callerId);
 
     return successResponse(`✅ selected [${selectedIdx}]`);
   } catch (error) {
@@ -238,7 +268,11 @@ export async function handleSelectPage(args: unknown): Promise<McpToolResponse> 
 
 export async function handleClosePage(args: unknown): Promise<McpToolResponse> {
   try {
-    const { pageIdx, workspaceId } = args as { pageIdx: number; workspaceId?: string };
+    const { pageIdx, workspaceId, callerId } = args as {
+      pageIdx: number;
+      workspaceId?: string;
+      callerId?: string;
+    };
 
     if (typeof pageIdx !== 'number') {
       throw new Error('pageIdx parameter is required and must be a number');
@@ -256,7 +290,7 @@ export async function handleClosePage(args: unknown): Promise<McpToolResponse> {
       throw new Error(`Page with index ${pageIdx} not found`);
     }
 
-    await firefox.closeTab(pageIdx, workspaceId);
+    await firefox.closeTab(pageIdx, workspaceId, callerId);
 
     return successResponse(`✅ closed [${pageIdx}]`);
   } catch (error) {

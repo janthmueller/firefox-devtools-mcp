@@ -5,4 +5,5 @@
 - [Migration to BiDi](./migration-to-bidi.md)
 - [Testing](./testing.md)
 - [Workspace Isolation Proposal](./workspace-isolation.md)
+- [Workspace Ownership First Slice](./workspace-ownership.md)
 - [Project Tracker](./tracking/project_tracker.md)
